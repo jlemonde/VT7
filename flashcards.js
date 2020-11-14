@@ -1,26 +1,34 @@
 // THE CODE OF THE SRS ALGORITHM, AND THE STORAGE
 function VocabTrainer(){
+   this.currentWorkingDeckID = 0;
    this.decks = new Array();
 }
 VocabTrainer.prototype.pushDeck = function(deck){
    if(this.alreadyExistFileID(deck.fileID)){
       alert("Error: the deck could not be created because its fileID was already existing.");
+      return false;
    }
    else{
       this.decks.push(deck);
+      return {
+         selectWorkingDeck:() => {
+            this.selectWorkingDeck(this.decks.length-1);
+         }
+      };
    }
 };
 VocabTrainer.prototype.removeDeck = function(deck_id){
    this.decks.splice(deck_id, 1);
 };
 VocabTrainer.prototype.alreadyExistFileID = function(file_id){
-   var is_unique = false;
+   var alreadyExists = false;
    for(var i of Object.keys(this.decks)){
       if(this.decks[i].fileID == file_id){
-         is_unique = true;
+         alreadyExists = true;
          break;
       }
    }
+   return alreadyExists;
 };
 VocabTrainer.prototype.storeDeck = function(deck_id){
    try{
@@ -62,6 +70,28 @@ VocabTrainer.prototype.loadAllDecks = function(){
 VocabTrainer.prototype.removeDeckFromStorage = function(file_id){
    alert("|@# This function was not implemented yet");
 };
+VocabTrainer.prototype.deck = function(workingDeckID){
+   // This method is used to return a deck. The advantage of writing vt.deck() over vt.decks[i] is that i defaults to the current working deck.
+   var id = workingDeckID !== undefined ? workingDeckID : this.currentWorkingDeckID;
+   if(id < this.decks.length && id >= 0){
+      return this.decks[id];
+   }
+   else{
+      alert("There was an error, could not return the deck.");
+      return false;
+   }
+};
+VocabTrainer.prototype.selectWorkingDeck = function(newWorkingDeckID){
+   if(newWorkingDeckID < this.decks.length && newWorkingDeckID >= 0){
+      this.currentWorkingDeckID = newWorkingDeckID;
+      return this;
+   }
+   else{
+      alert("Could not change deck; it does not exist.");
+      return false;
+   }
+};
+
 
 function Deck(name, description){
    this.name        = name;
@@ -76,7 +106,7 @@ function Deck(name, description){
 Deck.prototype.addEntry = function(faceA, faceB){
    this.entries.push(new Card(faceA, faceB));
 };
-Deck.prototype.editEntry = function(entry_id, faceA, faceB){
+Deck.prototype.editEntry = function(entry_id, faceA, faceB){ // |@# plutôt écrire une méthode Entry.prototype.edit() directement....
    this.entries[entry_id].faceA = faceA;
    this.entries[entry_id].faceB = faceB;
 };
@@ -149,15 +179,17 @@ vt.loadAllDecks();
 
 
 // testing:
-vt.pushDeck(new Deck("titre0", "description"));
-vt.decks[0].addEntry("a1","b1");
-vt.decks[0].addEntry("a2","b2");
-vt.decks[0].addEntry("a3","b3");
-vt.pushDeck(new Deck("titre1", "description"));
-vt.decks[1].addEntry("a1","b1");
-vt.decks[1].addEntry("a2","b2");
-vt.decks[1].addEntry("a3","b3");
-vt.pushDeck(new Deck("titre2", "description"));
-vt.decks[2].addEntry("a1","b1");
-vt.decks[2].addEntry("a2","b2");
-vt.decks[2].addEntry("a3","b3");
+vt.pushDeck(new Deck("titre0", "description")).selectWorkingDeck();
+vt.deck().addEntry("a1","b1");
+vt.deck().addEntry("a2","b2");
+vt.deck().addEntry("a3","b3");
+vt.pushDeck(new Deck("titre1", "description")).selectWorkingDeck();
+vt.deck().addEntry("a1","b1");
+vt.deck().addEntry("a2","b2");
+vt.deck().addEntry("a3","b3");
+vt.pushDeck(new Deck("titre2", "description")).selectWorkingDeck();
+vt.deck().addEntry("a1","b1");
+vt.deck().addEntry("a2","b2");
+vt.deck().addEntry("a3","b3");
+
+alert("Mettre une variable globale de sorte à pouvoir écrire vt.deck().addEntry(faceA,faceB), ainsi la méthode .deck() retourne le deck actuel. Possiblement faire la même chose pour les cartes, ainsi on aurait .entry().edit(faceA,faceB) au lieu de .editEntry(card_id, faceA, faceB). Le but ultime est de ne pas avoir à se soucier des card_id et des deck_id dans le code.");

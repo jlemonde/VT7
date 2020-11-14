@@ -1,5 +1,5 @@
 // ESPECIALLY ALL THE FUNCTIONS AND METHODS TO WRITE HTML CODE WITH JAVASCRIPT.
-// AND ALSO ALL TOOLS THAT MAKE LIFE EASIER
+// AND ALSO ALL TOOLS THAT MAKE LIFE EASIER, ESPECIALLY AJAX ETC.
 
 
 
@@ -9,6 +9,7 @@
 
 function millisecondsToEnglish(input){
    // This is a rough transcription from milliseconds to English
+   // The round up isn't even optimal. Who cares?
 
    var years = Math.floor(input/(1000*3600*24*365));
    if(years > 0) return (years + ' year' + (years == 1 ? '' : 's'));
