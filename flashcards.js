@@ -30,9 +30,9 @@ VocabTrainer.prototype.alreadyExistFileID = function(file_id){
    }
    return alreadyExists;
 };
-VocabTrainer.prototype.storeDeck = function(deck_id){
+VocabTrainer.prototype.storeDeck = function(deck_id){ // deck_id is optional (due to the way .deck() is handled)
    try{
-      localStorage.setItem("deck/"+this.decks[deck_id].fileID, JSON.stringify(this.decks[deck_id]));
+      localStorage.setItem("deck/"+this.deck(deck_id).fileID, JSON.stringify(this.deck(deck_id)));
    }
    catch(e){
       alert("Error: there was an error and the deck could not be saved to the localStorage.");
@@ -102,7 +102,6 @@ function Deck(name, description){
 
    this.entries     = new Array();
 }
-
 Deck.prototype.addEntry = function(faceA, faceB){
    this.entries.push(new Card(faceA, faceB));
 };
@@ -144,7 +143,7 @@ Card.prototype.getIntervals = function(goodness){
 };
 Card.prototype.getLearnFactorAdjust = function(goodness){
    // ACTUALLY THIS FUNCTION HAS NOTHING TO DO WITH THE CARDS, THE OUTPUT IS ALWAYS THE SAME.
-   var learnFactorAdjust = [1/3, 1/Math.pow(3, 1/2), Math.pow(2, 1/8), 2];
+   var learnFactorAdjust = [1/3, 1/Math.pow(3, 1/2), Math.pow(2, 1/4), 2];
    return learnFactorAdjust[goodness];
 };
 Card.prototype.revise = function(goodness){
@@ -192,4 +191,4 @@ vt.deck().addEntry("a1","b1");
 vt.deck().addEntry("a2","b2");
 vt.deck().addEntry("a3","b3");
 
-alert("Mettre une variable globale de sorte à pouvoir écrire vt.deck().addEntry(faceA,faceB), ainsi la méthode .deck() retourne le deck actuel. Possiblement faire la même chose pour les cartes, ainsi on aurait .entry().edit(faceA,faceB) au lieu de .editEntry(card_id, faceA, faceB). Le but ultime est de ne pas avoir à se soucier des card_id et des deck_id dans le code.");
+console.info("Mettre une variable globale de sorte à pouvoir écrire vt.deck().addEntry(faceA,faceB), ainsi la méthode .deck() retourne le deck actuel. Possiblement faire la même chose pour les cartes, ainsi on aurait .entry().edit(faceA,faceB) au lieu de .editEntry(card_id, faceA, faceB). Le but ultime est de ne pas avoir à se soucier des card_id et des deck_id dans le code.");

@@ -1,0 +1,172 @@
+/* NEVER MODIFY THE CSS FILE, ONLY THE SASS FILE! */
+@font-face {
+  font-family: "Rancho";
+  font-style: normal;
+  font-weight: 400;
+  src: local("Rancho"), url(font/rancho.woff2) format("woff2"), url(font/rancho.woff) format("woff");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+}
+.xApp, .xButton, nav#bannerbuttonbox .left div.button, nav#bannerbuttonbox .right div.button, header#banner {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+nav#bannerbuttonbox .left div.button, nav#bannerbuttonbox .right div.button, header#banner {
+  text-align: center;
+  color: white;
+  font-family: Rancho, cursive, Garamond, "Palatino Linotype", "Book Antiqua", Palatino, serif;
+}
+
+header#banner {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 50px;
+  line-height: 50px;
+  font-size: 26px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  z-index: 15;
+  box-shadow: 0px 1px 6px rgba(0, 0, 0, 0.85);
+  background-color: #8B90A2;
+}
+
+header#banner:hover {
+  background-color: #8AA48C;
+}
+
+nav#bannerbuttonbox .left {
+  left: 0px;
+}
+nav#bannerbuttonbox .right {
+  right: 0px;
+}
+nav#bannerbuttonbox .left, nav#bannerbuttonbox .right {
+  position: fixed;
+  z-index: 16;
+  font-size: 18px;
+  display: block;
+  top: 0px;
+  height: 50px;
+  padding: 3px;
+}
+nav#bannerbuttonbox .left div.button, nav#bannerbuttonbox .right div.button {
+  cursor: pointer;
+  display: inline-block;
+  padding: 6px;
+  margin: 3px;
+  height: 26px;
+  line-height: 26px;
+  min-width: 26px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+nav#bannerbuttonbox .left div.button:hover, nav#bannerbuttonbox .right div.button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+div#main {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 65px;
+  width: auto;
+  padding: 0px;
+}
+
+header#banner span.short {
+  display: inline;
+}
+header#banner span.long {
+  display: none;
+}
+
+@media screen and (min-width: 640px) {
+  body {
+    background-color: #EBEBFF;
+  }
+
+  div#main {
+    left: calc(10px + (100vw - 640px) / 2);
+    right: calc(10px + (100vw - 640px) / 2);
+  }
+
+  header#banner span.short {
+    display: none;
+  }
+  header#banner span.long {
+    display: inline;
+  }
+}
+.xButton {
+  display: inline-block;
+  margin: 2px;
+  font-family: "Trebuchet MS";
+  font-weight: bold;
+  text-align: center;
+  background-color: #DDD;
+  color: #333;
+  cursor: pointer;
+  white-space: no-wrap;
+  border-radius: 2px;
+  box-shadow: 1px 1px 1px #AAA;
+  vertical-align: middle;
+  font-size: 16px;
+  height: 25px;
+  line-height: 25px;
+  min-width: 25px;
+  padding: 4px;
+}
+
+.xButton.small {
+  font-size: 10px;
+  height: 12px;
+  line-height: 12px;
+  min-width: 12px;
+  padding: 5px;
+}
+
+.xButton:hover {
+  background-color: #CCC;
+  color: #000;
+  box-shadow: inset 1px 1px 1px #AAA;
+}
+
+.xButton:focus {
+  color: #000;
+}
+
+.xApp {
+  box-shadow: 0px 0px 12px #8AA48C;
+  font-family: "Trebuchet MS";
+  margin-bottom: 15px;
+}
+.xApp header {
+  min-height: 12px;
+  line-height: 16px;
+  padding: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  background-color: #DDD;
+  background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(transparent), to(#CCDDCC));
+  background-image: -moz-gradient(linear, 0% 0%, 0% 100%, from(transparent), to(#CCDDCC));
+  background-image: gradient(linear, 0% 0%, 0% 100%, from(transparent), to(#CCDDCC));
+  color: #666;
+  cursor: pointer;
+}
+.xApp header:hover {
+  background-color: #BBB;
+  color: #000;
+}
+.xApp article {
+  display: none;
+  font-size: 12px;
+  background-color: #EEE;
+  padding: 8px;
+}
+.xApp article.show {
+  display: block;
+}
+
+/*# sourceMappingURL=ui.css.map */
