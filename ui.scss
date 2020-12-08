@@ -4,11 +4,11 @@
 
 $fontfamily: 'Trebuchet MS';
 @font-face {
-   font-family:'Rancho';
-   font-style:normal;
-   font-weight:400;
-   src:local('Rancho'), url(font/rancho.woff2) format('woff2'), url(font/rancho.woff) format('woff');
-   unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+	font-family:'Rancho';
+	font-style:normal;
+	font-weight:400;
+	src:local('Rancho'), url(font/rancho.woff2) format('woff2'), url(font/rancho.woff) format('woff');
+	unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
 }
 
 $buttonColorText:            #333;
@@ -17,185 +17,335 @@ $buttonColorTextHover:       #000;
 $buttonBackgroundColor:      #DDD;
 $buttonBackgroundColorHover: #CCC;
 $buttonShadowColor:          #AAA;
+$buttonShadowCentered:    0px 1px 1px $buttonShadowColor;
 $buttonShadow:            1px 1px 1px $buttonShadowColor;
 $buttonShadowHover: inset 1px 1px 1px $buttonShadowColor;
 
+$appShadow:               0px 0px 12px #8AA48C;
+$appBackgroundColor:         #EEE;
+
 %selectnone {
-   -webkit-user-select:none;
-      -moz-user-select:none;
-           user-select:none;
+	-webkit-user-select:none;
+		-moz-user-select:none;
+			  user-select:none;
 }
 
 // Banner and banner buttons
 $bannerheight: 50px;
 %banneritemsfont {
-   @extend           %selectnone;
-   text-align:       center;
-   color:            white;
-   font-family:      Rancho,cursive,Garamond,"Palatino Linotype", "Book Antiqua", Palatino, serif;
+	@extend           %selectnone;
+	text-align:       center;
+	color:            white;
+	font-family:      Rancho,cursive,Garamond,"Palatino Linotype", "Book Antiqua", Palatino, serif;
 }
 header#banner {
-   @extend           %banneritemsfont;
-   position:         fixed;
-   top:              0px;
-   left:             0px;
-   width:            100%;
-   height:           $bannerheight;
-   line-height:      $bannerheight;
-   font-size:        26px;
-   letter-spacing:   1px;
-   cursor:           pointer;
-   z-index:          15;
-   box-shadow:       0px 1px 6px rgba(0,0,0,.85);
-   background-color: #8B90A2;
+	@extend           %banneritemsfont;
+	position:         fixed;
+	top:              0px;
+	left:             0px;
+	width:            100%;
+	height:           $bannerheight;
+	line-height:      $bannerheight;
+	font-size:        26px;
+	letter-spacing:   1px;
+	cursor:           pointer;
+	z-index:          15;
+	box-shadow:       0px 1px 6px rgba(0,0,0,.85);
+	background-color: #8B90A2;
 }
 header#banner:hover {
-   background-color: #8AA48C;
+	background-color: #8AA48C;
 }
 nav#bannerbuttonbox {
-   .left{
-      left: 0px;
-   }
-   .right{
-      right: 0px;
-   }
-   .left, .right{
-      $buttonboxpadding:   3px;
-      $buttonmargin:       3px;
-      $buttonpadding:      6px;
+	.left{
+		left: 0px;
+	}
+	.right{
+		right: 0px;
+	}
+	.left, .right{
+		$buttonboxpadding:   3px;
+		$buttonmargin:       3px;
+		$buttonpadding:      6px;
 
-      position:            fixed;
-      z-index:             16;
-      font-size:           18px;
-      display:             block;
-      top:                 0px;
-      height:              $bannerheight;
-      padding:             $buttonboxpadding;
+		position:            fixed;
+		z-index:             16;
+		font-size:           18px;
+		display:             block;
+		top:                 0px;
+		height:              $bannerheight;
+		padding:             $buttonboxpadding;
 
-      div.button {
-         @extend           %banneritemsfont;
-         cursor:           pointer;
-         display:          inline-block;
-         padding:          $buttonpadding;
-         margin:           $buttonmargin;
-         height:           $bannerheight - 2*$buttonpadding - 2*$buttonmargin - 2*$buttonboxpadding;
-         line-height:      $bannerheight - 2*$buttonpadding - 2*$buttonmargin - 2*$buttonboxpadding;
-         min-width:        $bannerheight - 2*$buttonpadding - 2*$buttonmargin - 2*$buttonboxpadding;
-         background-color: rgba(255, 255, 255, .1);
-      }
-      div.button:hover {
-         background-color: rgba(255, 255, 255, .3);
-      }
-   }
+		div.button {
+			@extend           %banneritemsfont;
+			cursor:           pointer;
+			display:          inline-block;
+			padding:          $buttonpadding;
+			margin:           $buttonmargin;
+			height:           $bannerheight - 2*$buttonpadding - 2*$buttonmargin - 2*$buttonboxpadding;
+			line-height:      $bannerheight - 2*$buttonpadding - 2*$buttonmargin - 2*$buttonboxpadding;
+			min-width:        $bannerheight - 2*$buttonpadding - 2*$buttonmargin - 2*$buttonboxpadding;
+			background-color: rgba(255, 255, 255, .1);
+		}
+		div.button:hover {
+			background-color: rgba(255, 255, 255, .3);
+		}
+	}
 }
 
 div#main{
-   position:               absolute;
-   left:                   10px;
-   right:                  10px;
-   top:                    $bannerheight + 15px;
-   width:                  auto;
-   padding:                0px;
+	position:               absolute;
+	left:                   10px;
+	right:                  10px;
+	top:                    $bannerheight + 15px;
+	width:                  auto;
+	padding:                0px;
 }
 header#banner {
-   span.short{
-      display:inline;
-   }
-   span.long{
-      display:none;
-   }
+	span.short{
+		display:inline;
+	}
+	span.long{
+		display:none;
+	}
 }
 @media screen and (min-width: 640px) {
-   // for large screens, above 640px
-   body{
-      background-color:#EBEBFF;
-   }
-   div#main{
-      left:  calc(10px + (100vw - 640px) / 2);
-      right: calc(10px + (100vw - 640px) / 2);
-   }
-   header#banner {
-      span.short{
-         display:none;
-      }
-      span.long{
-         display:inline;
-      }
-   }
+	// for large screens, above 640px
+	body{
+		background-color:#EBEBFF;
+	}
+	div#main{
+		left:  calc(10px + (100vw - 640px) / 2);
+		right: calc(10px + (100vw - 640px) / 2);
+	}
+	header#banner {
+		span.short{
+			display:none;
+		}
+		span.long{
+			display:inline;
+		}
+	}
 }
 
+footer#footer {
+	@extend           %selectnone;
+	position:         fixed;
+	bottom:           0px;
+	right:            0px;
+	padding:          4px;
+	line-height:      16px;
+	font-size:        16px;
+	font-family:      $fontfamily;
+	background-color: yellow;
+	color:            black;
+}
 
 // xButton
 .xButton {
-   @extend           %selectnone;
-   display:          inline-block;
-   margin:           2px;
-   font-family:      $fontfamily;
-   font-weight:      bold;
-   text-align:       center;
-   background-color: $buttonBackgroundColor;
-   color:            $buttonColorText;
-   cursor:           pointer;
-   white-space:      no-wrap;
-   border-radius:    2px;
-   box-shadow:       $buttonShadow;
+	@extend           %selectnone;
+	display:          inline-block;
+	margin:           2px;
+	font-family:      $fontfamily;
+	font-weight:      bold;
+	text-align:       center;
+	background-color: $buttonBackgroundColor;
+	color:            $buttonColorText;
+	cursor:           pointer;
+	white-space:      no-wrap;
+	border-radius:    2px;
+	box-shadow:       $buttonShadow;
 
-   // I'm unsure on whether the next command is desirable:
-   vertical-align: middle;
+	// I'm unsure on whether the next command is desirable:
+	vertical-align: middle;
 
-   font-size:16px;
-   height:25px;
-   line-height:25px;
-   min-width:25px;
-   padding:4px;
+	font-size:16px;
+	height:25px;
+	line-height:25px;
+	min-width:25px;
+	padding:4px;
 }
 .xButton.small {
-   font-size:10px;
-   height:12px;
-   line-height:12px;
-   min-width:12px;
-   padding:5px;
+	font-size:10px;
+	height:12px;
+	line-height:12px;
+	min-width:12px;
+	padding:5px;
 }
 .xButton:hover {
-   background-color: $buttonBackgroundColorHover;
-   color:$buttonColorTextHover;
-   box-shadow: $buttonShadowHover;
+	background-color: $buttonBackgroundColorHover;
+	color:$buttonColorTextHover;
+	box-shadow: $buttonShadowHover;
 }
 .xButton:focus {
-   color:$buttonColorTextHover;
+	color:$buttonColorTextHover;
+}
+
+.textfield {
+	margin-bottom:4px;
+	height:25px;
+	padding:4px;
+	line-height: 25px !important;
+}
+.fullwidth {
+	width: calc(100% - 8px) !important;
+	padding: 4px;
+	margin-left: 0px;
+	margin-right: 0px;
+	border: 0;
+	outline-style: none;
+	box-shadow: $buttonShadowCentered;
+}
+textarea.fullwidth, input.fullwidth {
+	text-align: center;
+	font: inherit;
 }
 
 .xApp {
-   @extend           %selectnone;
-   box-shadow:       0px 0px 12px #8AA48C;
-   font-family:      $fontfamily;
-   margin-bottom:    15px;
+	@extend           %selectnone;
+	box-shadow:       $appShadow;
+	font-family:      $fontfamily;
+	margin-bottom:    15px;
 
-   header {
-      min-height:       12px;
-      line-height:      16px;
-      padding:          8px;
-      font-size:        16px;
-      font-weight:      bold;
-      background-color: #DDD;
-      background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(transparent), to(#CCDDCC));
-      background-image:    -moz-gradient(linear, 0% 0%, 0% 100%, from(transparent), to(#CCDDCC));
-      background-image:         gradient(linear, 0% 0%, 0% 100%, from(transparent), to(#CCDDCC));
-      color:            #666;
-      cursor:           pointer;
-   }
-   header:hover {
-      background-color: #BBB;
-      color: #000;
-   }
+	header {
+		min-height:       12px;
+		line-height:      16px;
+		padding:          8px;
+		font-size:        16px;
+		font-weight:      bold;
+		background-color: #DDD;
+		background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(transparent), to(#CCDDCC));
+		background-image:    -moz-gradient(linear, 0% 0%, 0% 100%, from(transparent), to(#CCDDCC));
+		background-image:         gradient(linear, 0% 0%, 0% 100%, from(transparent), to(#CCDDCC));
+		color:            #666;
+		cursor:           pointer;
+	}
+	header:hover {
+		background-color: #BBB;
+		color: #000;
+	}
 
-   article {
-      display:          none;
-      font-size:        12px;
-      background-color: #EEE;
-      padding:          8px;
-   }
-   article.show {
-      display:block;
-   }
+	article {
+		display:          none;
+		font-size:        12px;
+		background-color: $appBackgroundColor;
+		padding:          8px;
+	}
+	article.show {
+		display:block;
+	}
+}
+
+
+
+#cardmain {
+	text-align:center;
+	position:relative;
+
+	#cardbody {
+		font-size: 18px;
+		margin: 3em 0 1em 0;
+		padding: 32px 0px;
+		font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+		cursor: pointer;
+
+	}
+	#cardhint {
+		all: unset;
+		position: relative;
+		height: 2em;
+		top: -1em;
+		left:0;
+		color: rgba(0,0,0,.3);
+		line-height: 1em;
+		width:100%;
+	}
+	#cardfoot {
+		display: flex;
+		justify-content: space-between;
+		flex-direction: row-reverse;
+
+		.cardbutton{
+			flex-grow: 1;
+			margin-left: 2px;
+			margin-right: 2px;
+
+			.label {
+				line-height: 15px;
+				font-size: 10px;
+			}
+			.duration {
+				line-height: 10px;
+				font-size: 7px;
+				opacity: .5;
+			}
+		}
+
+		.perfect{
+			background-color: #D2BEF2;
+		}
+		.good{
+			background-color: #D6C8EB;
+		}
+		.middle{
+			background-color: #D9D2E4;
+		}
+		.oups{
+			background-color: #DDDDDD;
+		}
+	}
+	#cardextras {
+		background-color: $appBackgroundColor;
+	}
+}
+#cardmain.showA {
+	#cardbody {
+		.faceA{
+			display:block;
+		}
+		.faceB{
+			display:none;
+		}
+	}
+	#cardextras {
+		display:none;
+	}
+}
+#cardmain.showB {
+	#cardbody{
+		background-color: rgb(238, 221, 255);
+
+		.faceA{
+			display:none;
+		}
+		.faceB{
+			display:block;
+		}
+	}
+	#cardextras {
+		display:block;
+	}
+}
+@media screen and (min-width: 1024px) { // big screens
+	#cardextras/*.popright*/ {
+		position:absolute;
+		left:635px;
+		top:0px;
+		width:168px;
+		padding:5px;
+		margin:0px;
+		width:calc((100vw - 620px) / 2 - 40px);
+		box-shadow: $appShadow;
+		//font-family:/*Garamond*/"Palatino Linotype", "Book Antiqua", Palatino, serif;
+		overflow:auto;
+		max-height: calc(100% - 5px * 2);
+	}
+}
+@media screen and (max-width: 1024px) { // small screens
+	#cardextras/*.popright*/ {
+		position:relative;
+		margin-top:1em;
+		//font-family:/*Garamond*/"Palatino Linotype", "Book Antiqua", Palatino, serif;
+		overflow:auto;
+	}
 }
