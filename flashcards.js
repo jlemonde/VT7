@@ -4,25 +4,112 @@ function VocabTrainer(){
 	this.decks = {};
 	this.lastSaved = Date.now();
 	setInterval(() => {
-		for(var d of Object.keys(this.decks)){
-			if(this.decks[d].lastmodif > this.lastSaved){
-				this.storeDeck(this.decks[d].deckID);
+		if(localStorage.getItem('username')){
+			for(var d of Object.keys(this.decks)){
+				if(this.decks[d].lastmodif > this.lastSaved){
+					this.storeDeck(this.decks[d].deckID);
+				}
+			}
+			this.lastSaved = Date.now();
+		}
+	}, 1000);
+	// Here we should add the same structure in order to save the decks to the server. It should run once a minute, check all the decks that haven't been uploaded, and save them. The function should also be called whenever changing file or going back home, in which case we should kinda reset the timer so that it runs a minute later, and not earlier. For this purpose, we want to create a setInterval of 1 second.
+	// |@# check that everything has been implemented correctly, test thoroughly, then remove the comment above.
+   // |@# in fact there is a tiny problem: when I first reload the page (F5), the algorithm would try to re-upload all decks, and the server would tell 'false, the backup is newest'
+	this.lastUploadCheck = Date.now();
+	setInterval(() => {
+		if(localStorage.getItem('username')){
+			if(Date.now() > this.lastUploadCheck + 1000*60 /* one minute */){
+				//we first download the decklist.
+				vt.downloadDeckList().then(function/*resolve*/(list){
+
+					// For all decks existing locally
+					for(var d of Object.keys(vt.decks)){
+						// If they exist on the server
+						if(!!list[d]){
+							// We check whether one is newer than the other
+							if(parseInt(list[d].lastmodif) < vt.decks[d].lastmodif){
+								// We upload the backup to have it updated
+								vt.uploadDeck(vt.decks[d].deckID);
+							}
+							else if(parseInt(list[d].lastmodif) > vt.decks[d].lastmodif){
+								// We download the newer backup
+								vt.downloadDeck(vt.decks[d].deckID);
+							}
+						}
+						else{
+							// We upload the backup because it doesn't yet exist on the server
+							vt.uploadDeck(vt.decks[d].deckID);
+						}
+					}
+					// Here we furthermore handle decks present on the server but not locally
+					var l = [];
+					for(var d of Object.keys(list)){
+						if(!vt.decks[d]){
+							l.push(list[d]);
+							//console.info("A new deck was found on the server: '"+list[d].decktitle+"' ("+list[d].filename+")");
+						}
+					}
+					if(!!document.getElementById('container_for_serverhosted_decklist')){
+						document.getElementById('container_for_serverhosted_decklist').delKids();
+						if(l.length){
+							document.getElementById('container_for_serverhosted_decklist').appendX({
+								tag:'div',
+								kids:'\nYour decks that are not on this device:'
+							});
+
+							var collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+							var filelist = l.sort((a, b) => {
+								return collator.compare(a.decktitle, b.decktitle);
+							});
+							l = filelist;
+							document.getElementById('container_for_serverhosted_decklist').appendX(
+								l.map((elem) => {
+									return {
+										tag:'div',
+										class:['xButton', 'small'],
+										kids:elem.decktitle,
+										click:function(){
+											vt.downloadDeck(elem.filename).then(() => {
+												document.getElementById('container_for_local_decklist').delKids();
+												document.getElementById('container_for_local_decklist').appendX(new XDeckListButtons());
+												this.delElement();
+											});
+										}
+									};
+								})
+							);
+						}
+					}
+					if(!!document.getElementById('container_for_local_decklist')){
+						document.getElementById('container_for_local_decklist').delKids();
+						document.getElementById('container_for_local_decklist').appendX(new XDeckListButtons());
+					}
+
+				}, function/*reject*/(){
+					console.info("Promise rejected... Boooh! Logging the user out.");
+					fsm.init();
+					localStorage.removeItem('username');
+				});
+
+				this.lastUploadCheck = Date.now();
 			}
 		}
-		this.lastSaved = Date.now();
-	}, 1000);
+
+	}, 1000 /*actually it would mostly run once every minute, not every second, but we need to check every second*/);
 }
 VocabTrainer.prototype.pushDeck = function(deck){
 	if(! this.decks.hasOwnProperty(deck.deckID)){
 		this.decks[deck.deckID] = deck;
 		this.lastDeckPushed = deck.deckID;
 		return {
-			selectWorkingDeck:() => {
+			selectWorkingDeck: () => {
 				this.selectWorkingDeck(this.lastDeckPushed);
 			}
 		};
 	}
 	else{
+		console.error('blah');
 		alert("Error: the deck could not be created because its deckID was already existing.");
 		return false;
 	}
@@ -74,6 +161,7 @@ VocabTrainer.prototype.loadDeck = function(deckID){
 	}
 };
 VocabTrainer.prototype.storeAllDecks = function(){
+	// I think that this method is not used anywhere. Remove it?
 	for(var i of Object.keys(this.decks)){
 		this.storeDeck(i);
 	}
@@ -84,6 +172,36 @@ VocabTrainer.prototype.loadAllDecks = function(){
 			this.loadDeck(i.substring("deck/".length));
 		}
 	}
+};
+VocabTrainer.prototype.downloadDeckList = function(){
+	return new Promise(function(resolve, reject){
+		var params = {
+			clienttimestamp:Math.round(Date.now()/1000)
+		};
+		ajax('comm.php?action=decklist', params, "Downloading the deck list...").then(function(resp){
+			if(resp.indexOf('true, ') == 0){
+				resp = resp.substr('true, '.length);
+				resp = JSON.parse(resp);
+				//console.info("HERE YOU GO!");
+				//console.log(resp);
+				var list = {};
+				for(var i = 0; i < resp.length; i++){
+					list[resp[i].filename] = resp[i];
+				}
+				resolve(list);
+
+			}
+			else if(resp == "false, logged out"){
+				alert("Your session timed out, please log in again!");
+				localStorage.removeItem('username');
+				fsm.init();
+			}
+			else{
+				//alert("|@# An error occurred when downloading the deck list. The error should be handled better by the developer.");
+				reject();
+			}
+		}, ajaxErr);
+	});
 };
 VocabTrainer.prototype.uploadDeck = function(deckID){ // possible usage: you can simply call vt.uploadDeck() from within a deck!
 	if(deckID == undefined){
@@ -98,7 +216,45 @@ VocabTrainer.prototype.uploadDeck = function(deckID){ // possible usage: you can
 		file:JSON.stringify(this.deck(deckID))
 	};
 	ajax('comm.php?action=uploaddeck', params, "Uploading deck '"+this.deck(deckID).name+"' ("+deckID+")").then(function(r){
-		console.log(r);
+		var resp = r.split(' ');
+		//console.log("AQUí TENEMOS resp: ", resp);
+		if(resp[0] == 'true,'){
+			vt.deck(resp[2]).lastupload = parseInt(resp[6]);
+			vt.storeDeck(resp[2]);
+		}
+		else{
+			alert("|@# An error occurred when uploading the backup of the deck. The error should be handled better by the developer.");
+		}
+	}, ajaxErr);
+};
+VocabTrainer.prototype.downloadDeck = function(deckID){
+	if(deckID == undefined){
+		deckID = this.workingDeckID;
+	}
+
+	var params = {
+		clienttimestamp:Math.round(Date.now()/1000),
+		filename:deckID
+	};
+	return ajax('comm.php?action=downloaddeck', params, "Downloading a deck ("+deckID+")").then(function(resp){
+		if(resp.indexOf('true, ') == 0){
+			resp = resp.substr('true, '.length);
+			resp = JSON.parse(resp);
+			Object.setPrototypeOf(resp, Deck.prototype);
+			for(var i of Object.keys(resp.entries)){
+				Object.setPrototypeOf(resp.entries[i], Card.prototype);
+			}
+			if(vt.deck() && vt.deck().deckID == resp.deckID){
+				fsm.goHome();
+			}
+			vt.removeDeck(resp.deckID);//we need that because we can't push on an existing deckID
+			vt.pushDeck(resp);
+			vt.storeDeck(resp.deckID);
+		}
+		else{
+			console.log(resp);
+			alert("|@# An error occurred when downloading the deck. The error should be handled better by the developer.");
+		}
 	}, ajaxErr);
 };
 VocabTrainer.prototype.deck = function(workingDeckID){
@@ -127,6 +283,7 @@ function Deck(name, description){
 	this.deckID      = Math.random().toString(36).substring(2);
 	this.since       = Date.now();
 	this.lastmodif   = Date.now(); // it is sufficient to reset it to Date.now() again to have the deck stored.
+	this.lastupload  = 0;
 
 	this.entries     = new Array();
 	this.workingEntry= undefined;
@@ -142,9 +299,13 @@ Deck.prototype.editEntryHint = function(newhint, entry_id){
 	this.entries[entry_id].hint = newhint;
 	this.lastmodif = Date.now(); // this triggers the automated storage of the deck.
 };
-Deck.prototype.editEntry = function(entry_id, faceA, faceB){ // |@# plutôt écrire une méthode Entry.prototype.edit() directement....
-	this.entries[entry_id].a = faceA;
-	this.entries[entry_id].b = faceB;
+Deck.prototype.editEntry = function(entry_id, faceA, faceB, hint, defs, xmpl, desc){
+	this.entries[entry_id].a    = faceA; // word in NL
+	this.entries[entry_id].b    = faceB; // word in TL
+	this.entries[entry_id].hint = hint;
+	this.entries[entry_id].defs = defs;
+	this.entries[entry_id].xmpl = xmpl;
+	this.entries[entry_id].desc = desc;
 	this.lastmodif = Date.now(); // this triggers the automated storage of the deck.
 };
 Deck.prototype.removeEntry = function(entry_id){
@@ -167,7 +328,7 @@ function Card(faceA, faceB, hint, defs, xmpl, desc){
 	this.desc        = desc || undefined;//additional notes and descriptions
 
 	this.isDisabled  = undefined;//actually: false, but we only look for explicit trues.
-	this.isStarred   = false;
+	this.isStarred   = undefined;//actually: false, but we only look for explicit trues.
 	this.since       = Date.now();
 
 	this.hasMedia    = undefined; // either undefined or true; tells whether to use with Internet
@@ -179,6 +340,8 @@ function Card(faceA, faceB, hint, defs, xmpl, desc){
 
 	// This contains the timestamp of when the card shall come back.
 	this.comeback = Date.now()-1000;
+
+	this.lastseen = undefined; // If undefined, it means the card is NEW!! otherwise contains a timestamp
 
 	//this.history = [];   // This is not used for now, but will (someday)
 }
@@ -214,10 +377,45 @@ Deck.prototype.reviseEntry = function(goodness){
 	// this triggers the automated storage of the deck.
 	this.lastmodif = Date.now();
 };
+VocabTrainer.prototype.sortedList = function(){
+	var collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+	var filelist = Object.keys(this.decks).sort((a, b) => {
+		return collator.compare(this.decks[a].name, this.decks[b].name);
+	});
+	return filelist;
+};
+Deck.prototype.entryListCounts = function(){
+	var available = 0;
+	var delayed   = 0;
+	var disabled  = 0;
+	var total     = 0;
+	// CAUTION: THIS LOOP SHALL LOOK THE SAME AS THE ONE IN .sortedEntryList !!
+	for(let i = 0; i < this.entries.length; i++){
+		total++;
+		if(this.entries[i].isDisabled === true){
+			disabled++;
+		}
+		else{
+			if(this.entries[i].comeback > Date.now()){
+				delayed++;
+			}
+			else{
+				available++;
+			}
+		}
+	}
+	return {
+		available:available,
+		delayed:delayed,
+		disabled:disabled,
+		total:total
+	};
+};
 Deck.prototype.sortedEntryList = function(){
 	var arrayAvailable = [];
 	var arrayDelayed   = [];
 	var arrayDisabled  = [];
+	// CAUTION: THIS LOOP SHALL LOOK THE SAME AS THE ONE IN .entryListCounts !!
 	for(let i = 0; i < this.entries.length; i++){
 		if(this.entries[i].isDisabled === true){
 			arrayDisabled.push(i);
@@ -231,7 +429,6 @@ Deck.prototype.sortedEntryList = function(){
 			}
 		}
 	}
-	console.warn("|@# CHECK THAT THE ORDER IS CORRECT!");
 	arrayAvailable.sort((a, b) => {
 		return this.entries[a].comeback < this.entries[b].comeback;
 	});
@@ -264,6 +461,9 @@ Deck.prototype.nextEntry = function(){
 			}
 		}
 	}
+	if(typeof this.entries[which] == 'object'){
+		this.entries[which].lastseen = Date.now();
+	}
 	this.workingEntry = which;
 };
 Deck.prototype.entry = function(i){
@@ -273,7 +473,94 @@ Deck.prototype.entry = function(i){
 	return this.entries[i];
 	// may return undefined if workingEntry is undefined
 };
+Deck.prototype.entriesDueWithin24h = function(){
+	var comeback24h = [];
+	for(let e = 0; e < this.entries.length; e++){
+		if(this.entry(e).isDisabled)
+			continue;
+		if(!this.entry(e).lastseen || this.entry(e).lastseen < Date.now() - 24*3600*1000)
+			// the point is that we only want to list entries that were revised today
+			//  (and would reappear within 24h because we did not remember them well enough
+			//  for them to reach a greater interval)
+			continue;
+		if(this.entry(e).comeback < Date.now() + 24*3600*1000){
+			comeback24h.push(e);
+		}
+	}
+	return comeback24h;
+};
+Deck.prototype.searchByKeyword = function(str, searchInHint, searchInAdditional){
+	var querystr  = str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+	//var queryarr  = querystr.split(' ').map(e => e.trim());
+	var results = [];
+	for(let e = 0; e < this.entries.length; e++){
+		var relev = 0;
+		if(typeof this.entries[e] == 'object'){
 
+			//console.log(2, this.entries[e]);
+			var a = this.entries[e].a;
+			if(typeof a == 'string'){
+				a = a.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+				let ind = a.indexOf(querystr);
+				if(ind >= 0){
+					let wwd = a.search(new RegExp('\\b' + querystr + '\\b')); // here we detect whether it was a whole word
+					relev += 4*(1 + (wwd >= 0)) + (ind == 0);
+				}
+			}
+			var b = this.entries[e].b;
+			if(typeof b == 'string'){
+				b = b.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+				let ind = b.indexOf(querystr);
+				if(ind >= 0){
+					let wwd = b.search(new RegExp('\\b' + querystr + '\\b')); // here we detect whether it was a whole word
+					relev += 5*(1 + (wwd >= 0)) + (ind == 0);
+				}
+			}
+			var hint = this.entries[e].hint;
+			if(typeof hint == 'string' && searchInHint){
+				hint = hint.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+				let ind = hint.indexOf(querystr);
+				if(ind >= 0){
+					let wwd = hint.search(new RegExp('\\b' + querystr + '\\b')); // here we detect whether it was a whole word
+					relev += 1*(1 + (wwd >= 0)) + (ind == 0);
+				}
+			}
+			var defs = this.entries[e].defs;
+			if(typeof defs == 'string' && searchInAdditional){
+				defs = defs.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+				let ind = defs.indexOf(querystr);
+				if(ind >= 0){
+					let wwd = defs.search(new RegExp('\\b' + querystr + '\\b')); // here we detect whether it was a whole word
+					relev += 1*(1 + (wwd >= 0)) + (ind == 0);
+				}
+			}
+			var xmpl = this.entries[e].xmpl;
+			if(typeof xmpl == 'string' && searchInAdditional){
+				xmpl = xmpl.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+				let ind = xmpl.indexOf(querystr);
+				if(ind >= 0){
+					let wwd = xmpl.search(new RegExp('\\b' + querystr + '\\b')); // here we detect whether it was a whole word
+					relev += 1*(1 + (wwd >= 0)) + (ind == 0);
+				}
+			}
+			var desc = this.entries[e].desc;
+			if(typeof desc == 'string' && searchInAdditional){
+				desc = desc.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+				let ind = desc.indexOf(querystr);
+				if(ind >= 0){
+					let wwd = desc.search(new RegExp('\\b' + querystr + '\\b')); // here we detect whether it was a whole word
+					relev += 1*(1 + (wwd >= 0)) + (ind == 0);
+				}
+			}
+		}
+		if(relev){
+			results.push({index:e, relevance:relev});
+		}
+	}
+	return results.sort(function(a, b){
+		return b.relevance - a.relevance;
+	}).map(el => el.index);
+};
 
 
 
@@ -299,22 +586,3 @@ Deck.prototype.entry = function(i){
 var vt = new VocabTrainer();
 // Initialisation
 vt.loadAllDecks();
-
-
-
-// testing:
-
-// vt.pushDeck(new Deck("titre0", "description")).selectWorkingDeck();
-// vt.deck().addEntry("a1","b1");
-// vt.deck().addEntry("a2","b2");
-// vt.deck().addEntry("a3","b3");
-// vt.pushDeck(new Deck("titre1", "description")).selectWorkingDeck();
-// vt.deck().addEntry("a1","b1");
-// vt.deck().addEntry("a2","b2");
-// vt.deck().addEntry("a3","b3");
-// vt.pushDeck(new Deck("titre2", "description")).selectWorkingDeck();
-// vt.deck().addEntry("a1","b1");
-// vt.deck().addEntry("a2","b2");
-// vt.deck().addEntry("a3","b3");
-//
-// console.info("Mettre une variable globale de sorte à pouvoir écrire vt.deck().addEntry(faceA,faceB), ainsi la méthode .deck() retourne le deck actuel. Possiblement faire la même chose pour les cartes, ainsi on aurait .entry().edit(faceA,faceB) au lieu de .editEntry(card_id, faceA, faceB). Le but ultime est de ne pas avoir à se soucier des card_id et des deck_id dans le code.");

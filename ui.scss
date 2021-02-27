@@ -21,8 +21,12 @@ $buttonShadowCentered:    0px 1px 1px $buttonShadowColor;
 $buttonShadow:            1px 1px 1px $buttonShadowColor;
 $buttonShadowHover: inset 1px 1px 1px $buttonShadowColor;
 
+$cardmediumShadow:        0px 1px 2px #999;
+
 $appShadow:               0px 0px 12px #8AA48C;
 $appBackgroundColor:         #EEE;
+
+$hintColor: rgba(0,0,0,.3);
 
 %selectnone {
 	-webkit-user-select:none;
@@ -201,6 +205,11 @@ textarea.fullwidth, input.fullwidth {
 	font: inherit;
 }
 
+input[type=checkbox]{
+	vertical-align: middle;
+	margin:0px 4px;
+}
+
 .xApp {
 	@extend           %selectnone;
 	box-shadow:       $appShadow;
@@ -236,6 +245,31 @@ textarea.fullwidth, input.fullwidth {
 	}
 }
 
+.decklist_item{
+	height:27px;
+	position:relative;
+}
+// .decklist_item[available]::after{
+// 	content:attr(available);
+// 	position:absolute;
+// 	top:-3px;
+// 	right:-3px;
+// 	background-color:red;
+// 	color:white;
+// 	font-size:6px;
+// 	border-radius:8px;
+// 	height:8px;
+// 	width:8px;
+// 	line-height:8px;
+// }
+.decklist_item_name{
+	font-size:11px;
+	line-height:14px;
+}
+.decklist_item_description{
+	font-size:7px;
+	line-height:12px;
+}
 
 
 #cardmain {
@@ -245,10 +279,14 @@ textarea.fullwidth, input.fullwidth {
 	#cardbody {
 		font-size: 18px;
 		margin: 3em 0 1em 0;
-		padding: 32px 0px;
 		font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
 		cursor: pointer;
 
+		.cardtext {
+			display:inline-block;
+			padding: 32px 10px;
+			white-space: pre-wrap;
+		}
 	}
 	#cardhint {
 		all: unset;
@@ -256,7 +294,7 @@ textarea.fullwidth, input.fullwidth {
 		height: 2em;
 		top: -1em;
 		left:0;
-		color: rgba(0,0,0,.3);
+		color: $hintColor;
 		line-height: 1em;
 		width:100%;
 	}
@@ -297,9 +335,25 @@ textarea.fullwidth, input.fullwidth {
 	#cardextras {
 		background-color: $appBackgroundColor;
 	}
+
+
+	.cardmedium.image, .cardmedium.video {
+		display:inline-block;
+		vertical-align:middle;
+		max-height:120px;
+		max-width:calc(100% - 2 * 1px);
+	}
+	.cardmedium.audio{
+		display:inline-block;
+		vertical-align:middle;
+		height:30px;
+		width:50%;
+	}
 }
 #cardmain.showA {
 	#cardbody {
+		background-color: rgba(204, 221, 204, 0.21);
+
 		.faceA{
 			display:block;
 		}
@@ -326,6 +380,18 @@ textarea.fullwidth, input.fullwidth {
 		display:block;
 	}
 }
+#cardmain.starred{
+	background-color: #FFE8E8;
+}
+#cardmain.starred.showB{
+	#cardbody{
+		background-color: #F7D4D4;
+	}
+}#cardmain.starred.showA{
+	#cardbody{
+		background-color: rgba(255, 216, 216, 0.21);
+	}
+}
 @media screen and (min-width: 1024px) { // big screens
 	#cardextras/*.popright*/ {
 		position:absolute;
@@ -347,5 +413,85 @@ textarea.fullwidth, input.fullwidth {
 		margin-top:1em;
 		//font-family:/*Garamond*/"Palatino Linotype", "Book Antiqua", Palatino, serif;
 		overflow:auto;
+		background-color:transparent !important;
 	}
+}
+[count-n]::after {
+   content:' (' attr(count-n) ')';
+   color:#AD125B;
+   font-size:0.8em;
+   font-weight:bold;
+   //font-family:monospace;
+}
+
+
+#listbox {
+	.entrylist_item {
+		span {
+			display:inline-block;
+			vertical-align: middle; // formerly:top
+			margin-top: 2px;
+			margin-bottom: 2px;
+		}
+		span.hintitem{
+			color: $hintColor;
+		}
+		.cardtext {
+			display:inline-block;
+			white-space: pre-wrap;
+		}
+	}
+	.entrylist_item.odd{
+		background-color: #E0E0E0;
+	}
+	.entrylist_item.even{
+		background-color: #E8E8E8;
+	}
+	.entrylist_item.disabled{
+		color:#CC6600;
+	}
+	.entrylist_item.delayed{
+		color:#9966CC;
+	}
+	// .entrylist_item.starred .labelfav span:last-of-type::after{
+	// 	content:'★';
+	// 	color:orange;
+	// 	margin-left:4px;
+	// }
+	.entrylist_item.starred.odd{
+		background-color: #FFE8E8;
+	}
+	.entrylist_item.starred.even{
+		background-color: #FFF0F0;
+	}
+	.cardmedium.image, .cardmedium.video{
+		display:inline-block;
+		vertical-align:middle;
+		max-height:30px;
+		max-width:calc(100% - 2 * 1px);
+	}
+	.cardmedium.audio{
+		display:inline-block;
+		vertical-align:middle;
+		height:30px;
+		width:60px;
+	}
+}
+.cardmedium {
+	box-shadow: $cardmediumShadow;
+	border-radius:2px;
+	margin:1px;
+}
+.cardmedium.image.maxsizepopout{
+	max-height:100% !important;
+	max-width:calc(100% - 2 * 1px) !important;
+	height:initial !important;
+	width:initial !important;
+	margin:0px;
+	border-radius:0px;
+}
+
+.semicolon, .plussign{
+   padding:0px 5px;
+   opacity:.5;
 }

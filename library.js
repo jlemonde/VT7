@@ -8,8 +8,10 @@ Element.prototype.addE = function(eventName, listenerFunction, capture){
 		this.attachEvent("on" + eventName, listenerFunction);
 	}
 	else{
-		// we want 'capture' to default to 'true', while it usually defaults to 'false'
-		this.addEventListener(eventName, listenerFunction, capture !== false ? true : false);
+		// we want 'capture' to default to 'false' so that it bubbles
+		// capturing means the parent element will be triggered first;
+		// on the other hand, bubbling (the opposite) means the child will be triggered first
+		this.addEventListener(eventName, listenerFunction, capture !== true ? false : true);
 	}
 	return this;
 };
@@ -74,7 +76,7 @@ Element.prototype.appendX = function(object){
 					else if(k == 'value'){ // Due to textareas' strange behaviour
 						a[k] = elem[k];
 					}
-					else{
+					else if(elem[k] !== undefined && elem[k] !== null){
 						a.setAttribute(k, elem[k]);
 					}
 				}
@@ -154,11 +156,17 @@ function ajax(url, params, alt){
 		return Promise.reject("offline");
 	}
 	if(typeof(params) == 'object'){
-		var p = '';
-		for(let k of Object.keys(params)){
-			p += k + '=' + encodeURIComponent(params[k]) + '&';
+		if(params.constructor.name === "FormData"){
+			// we are good so.
+			console.log("a FormData was passed to ajax");
 		}
-		params = p.substr(0,p.length-1);
+		else{
+			var p = '';
+			for(let k of Object.keys(params)){
+				p += k + '=' + encodeURIComponent(params[k]) + '&';
+			}
+			params = p.substr(0,p.length-1);
+		}
 	}
 	return new Promise(function(resolve, reject){
 		var xhr = new XMLHttpRequest();
@@ -204,7 +212,12 @@ function ajax(url, params, alt){
 		}
 		else{
 			xhr.open("POST", url, true);
-			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			if(typeof params == 'object' && params.constructor.name === "FormData"){
+				//xhr.setRequestHeader("Content-type", "multipart/form-data");
+			}
+			else{
+				xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			}
 			xhr.send(params);
 		}
 	});
@@ -351,4 +364,54 @@ function millisecondsToEnglish(input){
 	if(secs > 0) return (secs + ' second' + (secs == 1 ? '' : 's'));
 
 	return '0 seconds';
+}
+
+function previewString(str, len = 36){
+	// First thing, we only keep the first line
+	var s = str.split('\n');
+	//var t = s.length > 1 ? '↵' : '';
+	var t = '';
+	s = s[0];
+	if(s.length > len-t.length){
+		s = s.substr(0, len-t.length-1) + '…';
+	}
+	return s+t;
+}
+
+Array.prototype.countOccurrences = function(v){
+   var i = 0, j = 0;
+   while(this.indexOf(v, i) >= i){
+      i = this.indexOf(v, i) + 1;
+      j++;
+   }
+   return j;
+};
+String.prototype.countOccurrences = function(v){
+   var i = 0, j = 0;
+   while(this.indexOf(v, i) >= i){
+      i = this.indexOf(v, i) + 1;
+      j++;
+   }
+   return j;
+};
+
+
+
+
+
+//FILES
+function saveAsFile(filename,text){
+   filename = filename.replace(/[^A-Za-z0-9.-_]/gi,'_');
+   var pom = document.createElement('a');
+   pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+   pom.setAttribute('download', filename);
+
+   if(document.createEvent){
+      var event = document.createEvent('MouseEvents');
+      event.initEvent('click', true, true);
+      pom.dispatchEvent(event);
+   }
+   else{
+      pom.click();
+   }
 }
