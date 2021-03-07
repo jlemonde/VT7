@@ -23,7 +23,9 @@ $buttonShadowHover: inset 1px 1px 1px $buttonShadowColor;
 
 $cardmediumShadow:        0px 1px 2px #999;
 
-$appShadow:               0px 0px 12px #8AA48C;
+$olivegreen: #8AA48C;
+
+$appShadow:               0px 0px 12px $olivegreen;
 $appBackgroundColor:         #EEE;
 
 $hintColor: rgba(0,0,0,.3);
@@ -58,7 +60,7 @@ header#banner {
 	background-color: #8B90A2;
 }
 header#banner:hover {
-	background-color: #8AA48C;
+	background-color: $olivegreen;
 }
 nav#bannerbuttonbox {
 	.left{
@@ -143,6 +145,33 @@ footer#footer {
 	font-family:      $fontfamily;
 	background-color: yellow;
 	color:            black;
+}
+
+.separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: $olivegreen;
+  font-weight: bold;
+  font-size:14px;
+}
+.separator::before,
+.separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 2px solid $olivegreen;
+}
+.separator:not(:empty)::before {
+  margin-right: .25em;
+}
+.separator:not(:empty)::after {
+  margin-left: .25em;
+}
+.separator:not(:first-of-type) {
+    margin-top: 1.5em;
+}
+.separator {
+    margin-bottom: .5em;
 }
 
 // xButton

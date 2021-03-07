@@ -111,6 +111,38 @@ footer#footer {
   color: black;
 }
 
+.separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #8AA48C;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.separator::before,
+.separator::after {
+  content: "";
+  flex: 1;
+  border-bottom: 2px solid #8AA48C;
+}
+
+.separator:not(:empty)::before {
+  margin-right: 0.25em;
+}
+
+.separator:not(:empty)::after {
+  margin-left: 0.25em;
+}
+
+.separator:not(:first-of-type) {
+  margin-top: 1.5em;
+}
+
+.separator {
+  margin-bottom: 0.5em;
+}
+
 .xButton {
   display: inline-block;
   margin: 2px;

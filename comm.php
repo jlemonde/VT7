@@ -8,8 +8,9 @@ $privilegeCanManage = 4; // 1 << 2
 
 // INITIALISATION SESSION
 $lifetime = 259200; /*3 jours*/                             // session duration in seconds
-session_set_cookie_params($lifetime);                       // default cookie lifetime (including session cookies)
 ini_set('session.gc_maxlifetime', $lifetime);               // inactive session time-in (server side verification)
+ini_set('session.gc_probability', 0);               // inactive session time-in (server side verification)
+session_set_cookie_params($lifetime);                       // default cookie lifetime (including session cookies)
 session_start();
 setcookie(
 	session_name(),
@@ -100,12 +101,48 @@ if(isset($_GET['action']) && $_GET['action'] == 'passwordforgotten'){
 
 if(isset($_SESSION['logged']) && $_SESSION['logged'] == 'in'){
 	if(isset($_GET['action']) && $_GET['action'] == 'changepassword'){
-		echo 'not implemented yet';
+		if(isset($_POST['oldpass0']) && isset($_POST['newpass1']) && isset($_POST['newpass2'])){
+			if($_POST['newpass1'] == $_POST['newpass2']){
+				$db = pg_connect($connectionString);
+				$rq = pg_query_params($db, "SELECT username,passhash FROM users WHERE username = $1", array($_SESSION['username']));
+				$ar = pg_fetch_all($rq);
+				if(isset($ar[0]) && password_verify($_POST['oldpass0'], $ar[0]['passhash'])){
+					$passhash = password_hash($_POST['newpass1'], PASSWORD_BCRYPT);
+					$db = pg_connect($connectionString);
+					$rq = pg_query_params($db, "UPDATE users SET passhash = $1 WHERE username = $2", array($passhash, $_SESSION['username']));
+					echo 'true';
+				}
+				elseif(isset($ar[0])){
+					echo 'wrong password';
+				}
+				else{
+					echo 'wrong username';//should never occurr.
+				}
+			}
+			else{
+				echo 'false, new passwords do not coincide';
+			}
+		}
 		exit;
 	}
 
 	if(isset($_GET['action']) && $_GET['action'] == 'changeemail'){
-		echo 'not implemented yet';
+		if(isset($_POST['passwd']) && isset($_POST['email'])){
+			$db = pg_connect($connectionString);
+			$rq = pg_query_params($db, "SELECT username,passhash FROM users WHERE username = $1", array($_SESSION['username']));
+			$ar = pg_fetch_all($rq);
+			if(isset($ar[0]) && password_verify($_POST['passwd'], $ar[0]['passhash'])){
+				$db = pg_connect($connectionString);
+				$rq = pg_query_params($db, "UPDATE users SET email = $1 WHERE username = $2", array($_POST['email'], $_SESSION['username']));
+				echo 'true, ' . $_POST['email'];
+			}
+			elseif(isset($ar[0])){
+				echo 'wrong password';
+			}
+			else{
+				echo 'wrong username';//should never occurr.
+			}
+		}
 		exit;
 	}
 
@@ -167,7 +204,7 @@ if(isset($_SESSION['logged']) && $_SESSION['logged'] == 'in'){
 			echo "false, logged out";
 		}
 		else{
-			echo "false, nothing found, cannot make list...";
+			echo "true, {}";
 		}
 		exit;
 	}

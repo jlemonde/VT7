@@ -41,8 +41,8 @@
 		<footer id="footer">This is the footer</footer>
 
 		<!-- Scripts -->
-		<script type="text/javascript" src="library.js?"></script>
-		<script type="text/javascript" src="flashcards.js?"></script>
-		<script type="text/javascript" src="ui.js?"></script>
+		<script type="text/javascript" src="library.js?t=<?php echo time(); ?>"></script>
+		<script type="text/javascript" src="flashcards.js?t=<?php echo time(); ?>"></script>
+		<script type="text/javascript" src="ui.js?t=<?php echo time(); ?>"></script>
 	</body>
 </html>

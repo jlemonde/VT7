@@ -88,8 +88,8 @@ function VocabTrainer(){
 
 				}, function/*reject*/(){
 					console.info("Promise rejected... Boooh! Logging the user out.");
-					fsm.init();
 					localStorage.removeItem('username');
+					fsm.init();
 				});
 
 				this.lastUploadCheck = Date.now();
@@ -119,7 +119,8 @@ VocabTrainer.prototype.removeDeck = function(deckID){
 	delete this.decks[deckID];
 	localStorage.removeItem("deck/"+deckID);
 };
-VocabTrainer.prototype.storeDeck = function(deckID){ // deck_id is optional (due to the way .deck() is handled)
+VocabTrainer.prototype.storeDeck = function(deckID){
+	// deck_id is optional (due to the way .deck() is handled)
 	try{
 		localStorage.setItem("deck/"+deckID, JSON.stringify(this.deck(deckID)));
 		console.info("Deck '" + this.deck(deckID).name + "' ("+deckID+") stored into localStorage.");
@@ -197,13 +198,15 @@ VocabTrainer.prototype.downloadDeckList = function(){
 				fsm.init();
 			}
 			else{
+				console.log(resp);
 				//alert("|@# An error occurred when downloading the deck list. The error should be handled better by the developer.");
 				reject();
 			}
 		}, ajaxErr);
 	});
 };
-VocabTrainer.prototype.uploadDeck = function(deckID){ // possible usage: you can simply call vt.uploadDeck() from within a deck!
+VocabTrainer.prototype.uploadDeck = function(deckID){
+	// possible usage: you can simply call vt.uploadDeck() from within a deck!
 	if(deckID == undefined){
 		deckID = this.workingDeckID;
 	}
@@ -275,6 +278,13 @@ VocabTrainer.prototype.selectWorkingDeck = function(newWorkingDeckID){
 		return false;
 	}
 };
+VocabTrainer.prototype.sortedList = function(){
+	var collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+	var filelist = Object.keys(this.decks).sort((a, b) => {
+		return collator.compare(this.decks[a].name, this.decks[b].name);
+	});
+	return filelist;
+};
 
 
 function Deck(name, description){
@@ -316,49 +326,6 @@ Deck.prototype.removeEntry = function(entry_id){
 	this.entries.splice(entry_id, 1);
 	this.lastmodif = Date.now(); // this triggers the automated storage of the deck.
 };
-
-function Card(faceA, faceB, hint, defs, xmpl, desc){
-	// |@# it would be nice to have a dynamical amount of sides instead of just A and B
-	// |@# it would be nice to have specifications about which side is what. E.g. details, description, examples, url, ...
-	this.a           = faceA;
-	this.b           = faceB;
-	this.hint        = hint || undefined;//hint
-	this.defs        = defs || undefined;//definition
-	this.xmpl        = xmpl || undefined;//example
-	this.desc        = desc || undefined;//additional notes and descriptions
-
-	this.isDisabled  = undefined;//actually: false, but we only look for explicit trues.
-	this.isStarred   = undefined;//actually: false, but we only look for explicit trues.
-	this.since       = Date.now();
-
-	this.hasMedia    = undefined; // either undefined or true; tells whether to use with Internet
-
-	// This factor (noted "L" in the math part) determines how well you know the card. It is this
-	// factor that multiplies the initial learning intervals in order to determine the intervals that
-	// should show up when the card is revised.
-	this.learnFactor = 1;
-
-	// This contains the timestamp of when the card shall come back.
-	this.comeback = Date.now()-1000;
-
-	this.lastseen = undefined; // If undefined, it means the card is NEW!! otherwise contains a timestamp
-
-	//this.history = [];   // This is not used for now, but will (someday)
-}
-
-const PERFECT = 3;
-const GOOD    = 2;
-const MIDDLE  = 1;
-const OUPS    = 0;
-Card.prototype.getIntervals = function(goodness){
-	var initialIntervals  = [5*60*1000, 4*3600*1000, 2*24*3600*1000, 8*24*3600*1000];
-	return initialIntervals[goodness] * this.learnFactor;
-};
-Card.prototype.getLearnFactorAdjust = function(goodness){
-	// ACTUALLY THIS FUNCTION HAS NOTHING TO DO WITH THE CARDS, THE OUTPUT IS ALWAYS THE SAME.
-	var learnFactorAdjust = [1/2, 1/Math.pow(2, 1/2), Math.pow(2, 1/4), 2];
-	return learnFactorAdjust[goodness];
-};
 Deck.prototype.reviseEntry = function(goodness){
 	entry_id = this.workingEntry;
 
@@ -376,13 +343,6 @@ Deck.prototype.reviseEntry = function(goodness){
 
 	// this triggers the automated storage of the deck.
 	this.lastmodif = Date.now();
-};
-VocabTrainer.prototype.sortedList = function(){
-	var collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
-	var filelist = Object.keys(this.decks).sort((a, b) => {
-		return collator.compare(this.decks[a].name, this.decks[b].name);
-	});
-	return filelist;
 };
 Deck.prototype.entryListCounts = function(){
 	var available = 0;
@@ -560,6 +520,49 @@ Deck.prototype.searchByKeyword = function(str, searchInHint, searchInAdditional)
 	return results.sort(function(a, b){
 		return b.relevance - a.relevance;
 	}).map(el => el.index);
+};
+
+function Card(faceA, faceB, hint, defs, xmpl, desc){
+	// |@# it would be nice to have a dynamical amount of sides instead of just A and B
+	// |@# it would be nice to have specifications about which side is what. E.g. details, description, examples, url, ...
+	this.a           = faceA;
+	this.b           = faceB;
+	this.hint        = hint || undefined;//hint
+	this.defs        = defs || undefined;//definition
+	this.xmpl        = xmpl || undefined;//example
+	this.desc        = desc || undefined;//additional notes and descriptions
+
+	this.isDisabled  = undefined;//actually: false, but we only look for explicit trues.
+	this.isStarred   = undefined;//actually: false, but we only look for explicit trues.
+	//this.since       = Date.now();//we don't actually want to store that!
+
+	this.hasMedia    = undefined; // either undefined or true; tells whether to use with Internet
+
+	// This factor (noted "L" in the math part) determines how well you know the card. It is this
+	// factor that multiplies the initial learning intervals in order to determine the intervals that
+	// should show up when the card is revised.
+	this.learnFactor = 1;
+
+	// This contains the timestamp of when the card shall come back.
+	this.comeback = Date.now()-1000;
+
+	this.lastseen = undefined; // If undefined, it means the card is NEW!! otherwise contains a timestamp
+
+	//this.history = [];   // This is not used for now, but will (someday)
+}
+
+const PERFECT = 3;
+const GOOD    = 2;
+const MIDDLE  = 1;
+const OUPS    = 0;
+Card.prototype.getIntervals = function(goodness){
+	var initialIntervals  = [5*60*1000, 4*3600*1000, 2*24*3600*1000, 8*24*3600*1000];
+	return initialIntervals[goodness] * this.learnFactor;
+};
+Card.prototype.getLearnFactorAdjust = function(goodness){
+	// ACTUALLY THIS FUNCTION HAS NOTHING TO DO WITH THE CARDS, THE OUTPUT IS ALWAYS THE SAME.
+	var learnFactorAdjust = [1/2, 1/Math.pow(2, 1/2), Math.pow(2, 1/4), 2];
+	return learnFactorAdjust[goodness];
 };
 
 

@@ -54,7 +54,7 @@ function FiniteStateMachine(){
 						{
 							tag:'p',
 							style:'text-align:justify;',
-							kids:"IMPORTANT: This application is currently in the beta phase. One important notice to avoid data loss is to bear in mind that if you sync a deck at the very same time from several devices in parallel (e.g. your phone and your laptop), only one version is going to be kept. Other than that, the core features of the app are fully implemented, and the gadgets are going to be developed bit by bit."
+							kids:"IMPORTANT: This application is currently in the beta phase. One important notice to avoid data loss is to bear in mind that if you sync a deck at the very same time from several devices in parallel (e.g. your phone and your laptop), there might be one version that is going to be kept. Other than that, the core features of the app are fully implemented and work safely, and the gadgets are going to be developed bit by bit."
 						}
 					]
 				}
@@ -101,6 +101,7 @@ function FiniteStateMachine(){
 				ajax('comm.php?action=logout', '', "Logging the user out.").then(function(){
 					fsm.init();
 					localStorage.removeItem('username');
+					vt = new VocabTrainer();
 				}, ajaxErr);
 			}
 		});
@@ -210,18 +211,36 @@ function setUpLogInPage(){
 						type:'text',
 						class:['textfield', 'fullwidth'],
 						placeholder:'Username',
-						id:'login_input_username'
+						autocapitalize:'off',
+						autocorrect:'off',
+						autocomplete:'off',
+						spellcheck:'false',
+						id:'login_input_username',
+						value:'lastuser' in localStorage ? localStorage['lastuser'] : '',
+						change:function(){
+							vt = new VocabTrainer();
+							localStorage.clear();
+							localStorage['lastuser'] = this.value;
+						}
 					}, {
 						tag:'input',
 						type:'password',
 						class:['textfield', 'fullwidth'],
 						placeholder:'Password',
-						id:'login_input_password'
+						id:'login_input_password',
+						keyup:function(e){
+							if(e.keyCode == 13){
+								document.getElementById('log_in_button').click();
+							}
+						}
 					}, {
 						tag:'div',
 						class:['xButton', 'fullwidth'],
+						id:'log_in_button',
 						kids:'Log in',
 						click:function(){
+							localStorage.removeItem('username');
+
 							let params = {
 								username: document.getElementById('login_input_username').value,
 								password: document.getElementById('login_input_password').value
@@ -230,6 +249,8 @@ function setUpLogInPage(){
 								console.log(r);
 								if(r.indexOf('ok: ') == 0){
 									localStorage.setItem('username', r.substr(4));
+									vt = new VocabTrainer();
+									vt.loadAllDecks();
 									fsm.goHome();
 								}
 							}, ajaxErr);
@@ -239,7 +260,13 @@ function setUpLogInPage(){
 			}
 		]
 	});
-	document.getElementById('login_input_username').focus();
+	if(document.getElementById('login_input_username').value){
+		document.getElementById('login_input_password').focus();
+	}
+	else{
+		document.getElementById('login_input_username').focus();
+	}
+
 }
 
 function setUpAccountCreationPage(){
@@ -418,6 +445,7 @@ function setUpHomePage(){
 				kids:[
 					{
 						tag:'div',
+						class:'separator',
 						kids:'Change password:'
 					}, {
 						tag:'input',
@@ -442,10 +470,29 @@ function setUpHomePage(){
 						class:['xButton', 'fullwidth'],
 						kids:'Change password',
 						click:function(){
-							alert("Not yet implemented, but will be soon!");
+							var params = {
+								oldpass0: document.getElementById('userpasswordchange_old').value,
+								newpass1: document.getElementById('userpasswordchange_new1').value,
+								newpass2: document.getElementById('userpasswordchange_new2').value
+							};
+							ajax('comm.php?action=changepassword', params, "Changing password").then(function(r){
+								if(r == 'true'){
+									if(document.getElementById('userpasswordchange_old')){
+										document.getElementById('userpasswordchange_old').value = '';
+										document.getElementById('userpasswordchange_new1').value = '';
+										document.getElementById('userpasswordchange_new2').value = '';
+									}
+									alert("Password changed successfully!");
+								}
+								else{
+									alert("There was an error. Perhaps the old password is incorrect, or the new passwords do not coincide.");
+									console.log(r);
+								}
+							});
 						}
-					}, {tag:'br'}, {tag:'br'}, {
+					}, {
 						tag:'div',
+						class:'separator',
 						kids:"Change e-mail address:"
 					}, {
 						tag:'input',
@@ -464,12 +511,28 @@ function setUpHomePage(){
 						class:['xButton', 'fullwidth'],
 						kids:'Change e-mail address',
 						click:function(){
-							alert("Not yet implemented, but will be soon!");
+							var params = {
+								passwd:document.getElementById('useremailchange_password').value,
+								email: document.getElementById('useremailchange_email').value,
+							};
+							ajax('comm.php?action=changeemail', params, "Changing e-mail address").then(function(r){
+								if(r.indexOf('true, ') == 0){
+									if(document.getElementById('useremailchange_password')){
+										document.getElementById('useremailchange_password').value = '';
+										document.getElementById('useremailchange_email').value = r.substr('true, '.length);
+									}
+									alert("E-mail address changed successfully!");
+								}
+								else{
+									alert("There was an error. Perhaps the password is incorrect.");
+									console.log(r);
+								}
+							});
 						}
-					}, {tag:'br'}, {tag:'br'}, {
+					}/*, {tag:'br'}, {tag:'br'}, {
 						tag:'div',
 						kids:"I could add here as well a way to delete the user's account (legally important), and a button for the user to download all his data (including images, audio and video) to be GDPR-compliant."
-					}
+					}*/
 				]
 			}
 		]
@@ -478,7 +541,9 @@ function setUpHomePage(){
 function XDeckListButtons(){
 	this.tag  = 'div';
 	this.kids = [];
+	var counts = 0;
 	for(var i of vt.sortedList()){
+		counts++;
 		var metrics = vt.deck(i).entryListCounts();
 		var cfact   = Math.round(Math.min(metrics.available, 50) / Math.max(Math.min(metrics.total, 50), 3)*100)/100;
 		this.kids.push({
@@ -506,6 +571,9 @@ function XDeckListButtons(){
 				fsm.goTo(this.getAttribute('i'));
 			}
 		});
+	}
+	if(!counts){
+		this.kids.push("You haven't got any decks on this device for now!");
 	}
 }
 
@@ -797,6 +865,7 @@ function setUpDeckPage(){
 				kids:[
 					{
 						tag:'div',
+						class:'separator',
 						kids:"Description of the deck:"
 					},
 					{
@@ -814,9 +883,9 @@ function setUpDeckPage(){
 							vt.deck().lastmodif = Date.now();
 						}
 					},
-					"\n\n",
 					{
 						tag:'div',
+						class:'separator',
 						kids:"Deck-related tools:"
 					},
 					{
@@ -901,7 +970,7 @@ function setUpDeckPage(){
 						class:['xButton', 'small'],
 						kids:"Export this deck as JSON",
 						click:function(){
-							saveAsFile(vt.deck().name+'.archive.json', JSON.stringify(vt.deck(), null, 3));
+							saveAsFile(vt.deck().name+'.vt7.json', JSON.stringify(vt.deck(), null, 3));
 						}
 					},
 					{
@@ -958,43 +1027,53 @@ function setUpDeckPage(){
 							});
 						}
 					},
-					"\n\n",
 					{
 						tag:'div',
+						class:'separator',
 						kids:"Deck-related options:"
 					},
-					'speechSynthesis' in window ? {
-						tag:'center',
-						kids:[
-							"Language for speech synthesis: ",
-							{
-								tag:'span',
-								kids:'Loading...',
-								append:function(){
-									window.speechSynthesis.getVoices();
-									setTimeout(() => {
-										this.delKids().appendX({
-											tag:'select',
-											style:'max-width:100%;',
-											kids:window.speechSynthesis.getVoices().map((el, ind) => {
-												return {
-													tag:'option',
-													value:ind,
-													kids:el.name + ' (' + el.lang + ')',
-													selected:'speechSynthesisVoiceID' in vt.deck() && vt.deck().speechSynthesisVoiceID == ind ? true : undefined
-												};
-											}),
-											change:function(){
-												vt.deck().speechSynthesisVoiceID = this.value;
-												vt.deck().lastmodif = Date.now();
-											}
-										});
-									}, 1000);
-								}
+					'speechSynthesis' in window ? [
+						"Language for speech synthesis: ",
+						{
+							tag:'span',
+							kids:'Loading...',
+							append:function(){
+								window.speechSynthesis.getVoices();
+								setTimeout(() => {
+									this.delKids().appendX({
+										tag:'select',
+										style:'max-width:50%;',
+										kids:window.speechSynthesis.getVoices().map((el, ind) => {
+											return {
+												tag:'option',
+												value:ind,
+												kids:el.name + ' (' + el.lang + ')',
+												selected:'speechSynthesisVoiceID' in vt.deck() && vt.deck().speechSynthesisVoiceID == ind ? true : undefined
+											};
+										}),
+										change:function(){
+											vt.deck().speechSynthesisVoiceID = this.value;
+											vt.deck().lastmodif = Date.now();
+										}
+									});
+								}, 1000);
 							}
+						}, "\n", {
+							tag:'label',
+							'for':'speechSynthesisAutoSpeak',
+							kids:"Read the flashcards automatically as you flip them"
+						}, {
+							tag:'input',
+							type:'checkbox',
+							id:'speechSynthesisAutoSpeak',
+							checked:'speechSynthesisAutoSpeak' in vt.deck() && vt.deck().speechSynthesisAutoSpeak ? true : false,
+							change:function(){
+								vt.deck().speechSynthesisAutoSpeak = this.checked;
+								vt.deck().lastmodif = Date.now();
+							}
+						}
 
-						]
-					} : undefined
+					] : undefined
 				]
 			}
 		]
@@ -1022,9 +1101,13 @@ function setUpDeckPage(){
 				tag:'article',
 				class:'show',
 				id:'cardmain',
-				kids:new XCardMain()
+				kids:'Loading...'
 			}
 		]
+	});
+	document.getElementById('main').appendX({
+		tag:'span',
+		id:'container_for_guesswithkeyboard'
 	});
 	document.getElementById('main').appendX({
 		tag:'section',
@@ -1040,6 +1123,7 @@ function setUpDeckPage(){
 						var showOtherFields = document.getElementById('listOptionShowOtherFields').checked;
 						var querystr        = document.getElementById('listSearchbar').value;
 						document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, querystr));
+						document.getElementById('listSearchbar').focus();
 					});
 				}
 			}, {
@@ -1107,6 +1191,7 @@ function setUpDeckPage(){
 			}
 		]
 	});
+	document.getElementById('cardmain').delKids().appendX(new XCardMain());
 }
 
 function XEntryList(showHints = false, showOtherFields = false, querystr = undefined){
@@ -1235,7 +1320,6 @@ function XEntryList(showHints = false, showOtherFields = false, querystr = undef
 				otherDecks.push({deckid:d, amount:amount});
 			}
 		}
-		console.log(otherDecks);
 		if(otherDecks.length){
 			this.kids.push("\n"+"Results were also found in the following deck"+(otherDecks.length==1?'':'s')+": \n");
 			for(let b of otherDecks){
@@ -1350,6 +1434,37 @@ function processCardFace(face, autoplay){
 	});
 	return media;
 }
+function XGuessWithKeyboard(){
+	this.tag   = 'section';
+	this.class = 'xApp';
+	this.style = 'display:none;'
+	this.kids  = [{
+		tag:'header',
+		kids:"Type in the answer",
+		click:function(){
+			xAppOpenClose(this.parentNode);
+		}
+	}, {
+		tag:'article',
+		class:'show',
+		kids:[
+			{
+				tag:'input',
+				type:'text',
+				class:['textfield', 'fullwidth'],
+				placeholder:'Type in the answer',
+				autocapitalize:'off',
+				autocorrect:'off',
+				autocomplete:'off',
+				spellcheck:'false',
+				keyup:function(){
+					// not yet implemented
+				}
+
+			}
+		]
+	}];
+}
 function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm would choose an entry
 	var card;
 	if(entry_id !== undefined){
@@ -1384,6 +1499,10 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 
 	if(!!document.getElementById('container_for_editions')){
 		document.getElementById('container_for_editions').delKids();
+	}
+	if(!!document.getElementById('container_for_guesswithkeyboard')){
+		document.getElementById('container_for_guesswithkeyboard').delKids();
+		// this element is filled with appendX later
 	}
 
 	if(card === undefined){
@@ -1488,6 +1607,7 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 						tag:'div',
 						class:['xButton', 'small'],
 						kids:'Speak',
+						id:'speechSynthesisSpeakButton',
 						click:function(){
 							if('speechSynthesisVoiceID' in vt.deck()){
 								var GSMssg   = new SpeechSynthesisUtterance();
@@ -1525,6 +1645,11 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 				click:function(){
 					document.getElementById('cardmain').classList.toggle('showA');
 					document.getElementById('cardmain').classList.toggle('showB');
+					if(document.getElementById('cardmain').classList.contains('showB') && 'speechSynthesisVoiceID' in vt.deck() && 'speechSynthesisAutoSpeak' in vt.deck() && vt.deck().speechSynthesisAutoSpeak){
+						if(document.getElementById('speechSynthesisSpeakButton')){
+							document.getElementById('speechSynthesisSpeakButton').triggerE('click');
+						}
+					}
 				},
 				kids:[
 					{
@@ -1684,6 +1809,10 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 				]
 			}
 		];
+		if(!!document.getElementById('container_for_guesswithkeyboard')){
+			// this element is already emptied earlier
+			document.getElementById('container_for_guesswithkeyboard').appendX(new XGuessWithKeyboard());
+		}
 	}
 
 	if(!!document.getElementById('article_listofentries') && document.getElementById('article_listofentries').classList.contains('show')){
