@@ -26,8 +26,8 @@
 		<meta name="theme-color" content="#535661">
 
 		<!-- Feuilles de style -->
-		<link rel="stylesheet" type="text/css" href="library.css" />
-		<link rel="stylesheet" type="text/css" href="ui.css" />
+		<link rel="stylesheet" type="text/css" href="library.css?t=<?php echo time(); ?>" />
+		<link rel="stylesheet" type="text/css" href="ui.css?t=<?php echo time(); ?>" />
 	</head>
 	<body>
 		<header id="banner"><span class="short">VocabPocket</span><span class="long">Your vocab's in your pocket</span></header>

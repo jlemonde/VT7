@@ -3,6 +3,7 @@
 /* NEVER MODIFY THE CSS FILE, ONLY THE SASS FILE! */
 
 $fontfamily: 'Trebuchet MS';
+$cardfont:   "Palatino Linotype", "Book Antiqua", Palatino, serif;
 @font-face {
 	font-family:'Rancho';
 	font-style:normal;
@@ -148,30 +149,41 @@ footer#footer {
 }
 
 .separator {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  color: $olivegreen;
-  font-weight: bold;
-  font-size:14px;
+	display: flex;
+	align-items: center;
+	text-align: center;
+	color: $olivegreen;
+	font-weight: bold;
+	font-size:14px;
 }
 .separator::before,
 .separator::after {
-  content: '';
-  flex: 1;
-  border-bottom: 2px solid $olivegreen;
+	content: '';
+	flex: 1;
+	border-bottom: 2px solid $olivegreen;
 }
 .separator:not(:empty)::before {
-  margin-right: .25em;
+	margin-right: .25em;
 }
 .separator:not(:empty)::after {
-  margin-left: .25em;
+	margin-left: .25em;
 }
-.separator:not(:first-of-type) {
-    margin-top: 1.5em;
+.separator:not(:first-of-type):not(.small) {
+	margin-top: 1.5em;
+}
+.separator.small:not(:first-of-type) {
+	margin-top: .5em;
 }
 .separator {
-    margin-bottom: .5em;
+	margin-bottom: .5em;
+}
+.separator.small{
+	font-weight: normal;
+	font-size:12px;
+}
+.separator.small::before,
+.separator.small::after{
+	border-bottom: 1px solid $olivegreen;
 }
 
 // xButton
@@ -203,7 +215,7 @@ footer#footer {
 	height:12px;
 	line-height:12px;
 	min-width:12px;
-	padding:5px;
+	padding:5px 4px;
 }
 .xButton:hover {
 	background-color: $buttonBackgroundColorHover;
@@ -277,20 +289,25 @@ input[type=checkbox]{
 .decklist_item{
 	height:27px;
 	position:relative;
+	flex-grow:1;
+	min-width:20%;
 }
-// .decklist_item[available]::after{
-// 	content:attr(available);
-// 	position:absolute;
-// 	top:-3px;
-// 	right:-3px;
-// 	background-color:red;
-// 	color:white;
-// 	font-size:6px;
-// 	border-radius:8px;
-// 	height:8px;
-// 	width:8px;
-// 	line-height:8px;
+// .decklist_item.needsdownload::after, .decklist_item.needsupload::after{
+// 	content: '';
+// 	position: absolute;
+// 	top: 0px;
+// 	right: 0px;
+// 	width: 10px;
+// 	height: 10px;
+// 	border-radius: 2px;
 // }
+// .decklist_item.needsdownload::after{
+// 	background-color: blue;
+// }
+// .decklist_item.needsupload::after{
+// 	background-color: red;
+// }
+
 .decklist_item_name{
 	font-size:11px;
 	line-height:14px;
@@ -298,6 +315,11 @@ input[type=checkbox]{
 .decklist_item_description{
 	font-size:7px;
 	line-height:12px;
+}
+.decklistflex{
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
 }
 
 
@@ -308,7 +330,7 @@ input[type=checkbox]{
 	#cardbody {
 		font-size: 18px;
 		margin: 3em 0 1em 0;
-		font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+		font-family: $cardfont;
 		cursor: pointer;
 
 		.cardtext {
@@ -336,6 +358,7 @@ input[type=checkbox]{
 			flex-grow: 1;
 			margin-left: 2px;
 			margin-right: 2px;
+			width:20px; // just setting some small value so that they are the same size before flex-grow.
 
 			.label {
 				line-height: 15px;
@@ -363,6 +386,9 @@ input[type=checkbox]{
 	}
 	#cardextras {
 		background-color: $appBackgroundColor;
+		.cardextrascontent{
+			font-family: $cardfont;
+		}
 	}
 
 
@@ -411,12 +437,28 @@ input[type=checkbox]{
 }
 #cardmain.starred{
 	background-color: #FFE8E8;
+
+	#cardfoot.fixedinterv{
+		.perfect{
+			background-color: hsl(0, 67%, 87%);
+		}
+		.good{
+			background-color: hsl(0, 47%, 87%);
+		}
+		.middle{
+			background-color: hsl(0, 25%, 87%);
+		}
+		.oups{
+			background-color: hsl(0, 0%, 87%);
+		}
+	}
 }
 #cardmain.starred.showB{
 	#cardbody{
 		background-color: #F7D4D4;
 	}
-}#cardmain.starred.showA{
+}
+#cardmain.starred.showA{
 	#cardbody{
 		background-color: rgba(255, 216, 216, 0.21);
 	}
@@ -452,6 +494,10 @@ input[type=checkbox]{
    font-weight:bold;
    //font-family:monospace;
 }
+#entrycounter{
+	float:right;
+	font-size:12px;
+}
 
 
 #listbox {
@@ -470,36 +516,36 @@ input[type=checkbox]{
 			white-space: pre-wrap;
 		}
 	}
-	.entrylist_item.odd{
+	.entrylist_item.odd {
 		background-color: #E0E0E0;
 	}
-	.entrylist_item.even{
+	.entrylist_item.even {
 		background-color: #E8E8E8;
 	}
-	.entrylist_item.disabled{
-		color:#CC6600;
-	}
-	.entrylist_item.delayed{
+	.entrylist_item.delayed {
 		color:#9966CC;
+	}
+	.entrylist_item.disabled {
+		color:#CC6600;
 	}
 	// .entrylist_item.starred .labelfav span:last-of-type::after{
 	// 	content:'★';
 	// 	color:orange;
 	// 	margin-left:4px;
 	// }
-	.entrylist_item.starred.odd{
+	.entrylist_item.starred.odd {
 		background-color: #FFE8E8;
 	}
-	.entrylist_item.starred.even{
+	.entrylist_item.starred.even {
 		background-color: #FFF0F0;
 	}
-	.cardmedium.image, .cardmedium.video{
+	.cardmedium.image, .cardmedium.video {
 		display:inline-block;
 		vertical-align:middle;
 		max-height:30px;
 		max-width:calc(100% - 2 * 1px);
 	}
-	.cardmedium.audio{
+	.cardmedium.audio {
 		display:inline-block;
 		vertical-align:middle;
 		height:30px;
@@ -511,7 +557,7 @@ input[type=checkbox]{
 	border-radius:2px;
 	margin:1px;
 }
-.cardmedium.image.maxsizepopout{
+.cardmedium.image.maxsizepopout {
 	max-height:100% !important;
 	max-width:calc(100% - 2 * 1px) !important;
 	height:initial !important;
@@ -520,7 +566,19 @@ input[type=checkbox]{
 	border-radius:0px;
 }
 
-.semicolon, .plussign{
+.semicolon, .plussign {
    padding:0px 5px;
    opacity:.5;
+}
+.asteriscs {
+	font-variant:small-caps;
+	opacity:.5;
+	color:/*gray*/#4466BB;
+	font-style:normal;
+}
+.bracesdef {
+	font-size:0.6em;
+	color:#2c43c7;
+	font-style:italic;
+	font-family:$fontfamily;
 }

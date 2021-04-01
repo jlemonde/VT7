@@ -44,17 +44,17 @@ function FiniteStateMachine(){
 						{
 							tag:'p',
 							style:'text-align:justify;',
-							kids:[{tag:'i', kids:'VocabPocket'}, " is a spaced repetition system (SRS) in the form of a flashcarding app, aimed at vocabulary acquisition. You can learn more about ", {tag:'a', href:'https://en.wikipedia.org/wiki/Spaced_repetition', kids:'spaced repetition', target:'_blank'}, ' and ', {tag:'a', href:'https://en.wikipedia.org/wiki/Forgetting_curve', kids:'forgetting curves', target:'_blank'}, ' on Wikipedia.']
+							kids:[{tag:'i', kids:'VocabPocket'}, " is a spaced repetition system (SRS) in the form of a flashcarding app, aimed at but not restricted to vocabulary acquisition. You can learn more about ", {tag:'a', href:'https://en.wikipedia.org/wiki/Spaced_repetition', kids:'spaced repetition', target:'_blank'}, ' and ', {tag:'a', href:'https://en.wikipedia.org/wiki/Forgetting_curve', kids:'forgetting curves', target:'_blank'}, ' on Wikipedia.']
 						},
 						{
 							tag:'p',
 							style:'text-align:justify;',
-							kids:"You can use this application from the computer and from the mobile phone conjointly. On mobile, if you are using Google Chrome on Android or Safari on iOS, you can add the website to your home page and the app will behave like a native app."
+							kids:"You can use this application from the computer and from the mobile phone conjointly. On mobile, if you are using Google Chrome on Android or Safari on iOS, you can add the website to your home page and the app will behave like a native app. On the computer, we recommend zooming the page to at least 130%."
 						},
 						{
 							tag:'p',
 							style:'text-align:justify;',
-							kids:"IMPORTANT: This application is currently in the beta phase. One important notice to avoid data loss is to bear in mind that if you sync a deck at the very same time from several devices in parallel (e.g. your phone and your laptop), there might be one version that is going to be kept. Other than that, the core features of the app are fully implemented and work safely, and the gadgets are going to be developed bit by bit."
+							kids:"IMPORTANT: This application is currently in the beta phase. One important notice to avoid data loss is to bear in mind that if you sync a deck at the very same time from several devices in parallel (e.g. your phone and your laptop), there might be only one version that is going to be kept. Other than that, the core features of the app are fully implemented and work safely, and the gadgets are going to be developed bit by bit."
 						}
 					]
 				}
@@ -426,6 +426,76 @@ function setUpHomePage(){
 		kids:[
 			{
 				tag:'header',
+				kids:'Import a deck',
+				click:function(){
+					xAppOpenClose(this.parentNode);
+				}
+			}, {
+				tag:'article',
+				kids:[
+					{
+						tag:'div',
+						//kids:'This feature is not completely implemented yet...',
+						kids:"We currently only support our own JSON format (other formats may be supported soon), but note that you can already import entries from a spreadsheet to an existing deck."
+					}, {
+						tag:'input',
+						type:'file',
+						name:'files[]',
+						multiple:true,
+						class:['fullwidth', 'textfield'],
+						change:function(e){
+							var self = this;
+							var files = e.target.files;
+							var reader = [];
+							for(let i = 0, f; f = files[i]; i++){
+								// Only process VT7.JSON archives
+								if(!f.type.match('application/json') || !f.name.match(/\.vt7\.json$/gi)){
+									console.log("File not supported!");
+									continue;
+								}
+								reader[i] = new FileReader();
+								reader[i].onload = function(evt){
+									var ok;
+									try{
+										ok = JSON.parse(this.result);
+									}
+									catch(e){
+										ok = false;
+										console.error("A file had a problem being parsed as JSON", e);
+									}
+									if(ok !== false){
+										Object.setPrototypeOf(ok, Deck.prototype);
+										for(var i of Object.keys(ok.entries)){
+											Object.setPrototypeOf(ok.entries[i], Card.prototype);
+										}
+										vt.pushDeck(ok);
+										vt.storeDeck(ok.deckID);
+										if(!!document.getElementById('container_for_local_decklist')){
+											document.getElementById('container_for_local_decklist').delKids();
+											document.getElementById('container_for_local_decklist').appendX(new XDeckListButtons());
+										}
+										if(document.getElementById('import_json_decks_results')){
+											document.getElementById('import_json_decks_results').appendX("Deck '"+ ok.name +"' imported successfully.\n");
+										}
+									}
+								};
+								reader[i].readAsText(f);
+							}
+						}
+					}, {
+						tag:'div',
+						id:'import_json_decks_results'
+					}
+				]
+			}
+		]
+	});
+	document.getElementById('main').appendX({
+		tag:'section',
+		class:'xApp',
+		kids:[
+			{
+				tag:'header',
 				kids:'User credentials',
 				click:function(){
 					xAppOpenClose(this.parentNode, function(){
@@ -443,6 +513,18 @@ function setUpHomePage(){
 			}, {
 				tag:'article',
 				kids:[
+					{
+						tag:'div',
+						style:{textAlign:'center', fontSize:'1.2em'},
+						kids:[
+							"Connected as ",
+							{
+								tag:'b',
+								kids:localStorage.getItem('username') || 'Error!'
+							},
+							"."
+						]
+					},
 					{
 						tag:'div',
 						class:'separator',
@@ -540,6 +622,7 @@ function setUpHomePage(){
 }
 function XDeckListButtons(){
 	this.tag  = 'div';
+	this.class='decklistflex';
 	this.kids = [];
 	var counts = 0;
 	for(var i of vt.sortedList()){
@@ -723,66 +806,86 @@ function XAppAddOrEdit(addOrEdit = 'add', entry_id){
 								document.getElementById((addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_sendbutton').triggerE('click');
 							}
 						}
-					}, {
-						tag:'textarea',
-						id:(addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_defs',
-						class:['fullwidth', 'textfield'],
-						style:'opacity:.5',
-						placeholder:'Definitions',
-						autocapitalize:'off',
-						autocorrect:'off',
-						autocomplete:'off',
-						spellcheck:'false',
-						value:addOrEdit != 'edit' ? '' : vt.deck().entry().defs || '',
-						keyup:function(e){
-							this.style.opacity = this.value ? '' : '.5';
-							if(e.keyCode == 13 && e.ctrlKey){
-								document.getElementById((addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_sendbutton').triggerE('click');
+					},
+					// {
+					// 	tag:'div',
+					// 	class:['xButton', 'small', 'fullwidth'],
+					// 	id:'button_for_three_additional_fields',
+					// 	kids:"Show additional fields",
+					// 	click:function(){
+					// 		document.getElementById('button_for_three_additional_fields').delElement();
+					// 		document.getElementById('container_for_three_additional_fields').style.display = '';
+					// 	}
+					// },
+					{
+						tag:'span',
+						id:'container_for_three_additional_fields',
+						// style:{
+						// 	display:'none'
+						// },
+						kids:[
+							{
+								tag:'textarea',
+								id:(addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_defs',
+								class:['fullwidth', 'textfield'],
+								style:'opacity:.5',
+								placeholder:'Definitions',
+								autocapitalize:'off',
+								autocorrect:'off',
+								autocomplete:'off',
+								spellcheck:'false',
+								value:addOrEdit != 'edit' ? '' : vt.deck().entry().defs || '',
+								keyup:function(e){
+									this.style.opacity = this.value ? '' : '.5';
+									if(e.keyCode == 13 && e.ctrlKey){
+										document.getElementById((addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_sendbutton').triggerE('click');
+									}
+								},
+								input:function(){
+									resizeTextarea(this);
+								}
+							}, {
+								tag:'textarea',
+								id:(addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_xmpl',
+								class:['fullwidth', 'textfield'],
+								style:'opacity:.5',
+								placeholder:'Examples',
+								autocapitalize:'off',
+								autocorrect:'off',
+								autocomplete:'off',
+								spellcheck:'false',
+								value:addOrEdit != 'edit' ? '' : vt.deck().entry().xmpl || '',
+								keyup:function(e){
+									this.style.opacity = this.value ? '' : '.5';
+									if(e.keyCode == 13 && e.ctrlKey){
+										document.getElementById((addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_sendbutton').triggerE('click');
+									}
+								},
+								input:function(){
+									resizeTextarea(this);
+								}
+							}, {
+								tag:'textarea',
+								id:(addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_desc',
+								class:['fullwidth', 'textfield'],
+								style:'opacity:.5',
+								placeholder:'Additional notes',
+								autocapitalize:'off',
+								autocorrect:'off',
+								autocomplete:'off',
+								spellcheck:'false',
+								value:addOrEdit != 'edit' ? '' : vt.deck().entry().desc || '',
+								keyup:function(e){
+									this.style.opacity = this.value ? '' : '.5';
+									if(e.keyCode == 13 && e.ctrlKey){
+										document.getElementById((addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_sendbutton').triggerE('click');
+									}
+								},
+								input:function(){
+									resizeTextarea(this);
+								}
 							}
-						},
-						input:function(){
-							resizeTextarea(this);
-						}
-					}, {
-						tag:'textarea',
-						id:(addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_xmpl',
-						class:['fullwidth', 'textfield'],
-						style:'opacity:.5',
-						placeholder:'Examples',
-						autocapitalize:'off',
-						autocorrect:'off',
-						autocomplete:'off',
-						spellcheck:'false',
-						value:addOrEdit != 'edit' ? '' : vt.deck().entry().xmpl || '',
-						keyup:function(e){
-							this.style.opacity = this.value ? '' : '.5';
-							if(e.keyCode == 13 && e.ctrlKey){
-								document.getElementById((addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_sendbutton').triggerE('click');
-							}
-						},
-						input:function(){
-							resizeTextarea(this);
-						}
-					}, {
-						tag:'textarea',
-						id:(addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_desc',
-						class:['fullwidth', 'textfield'],
-						style:'opacity:.5',
-						placeholder:'Additional notes',
-						autocapitalize:'off',
-						autocorrect:'off',
-						autocomplete:'off',
-						spellcheck:'false',
-						value:addOrEdit != 'edit' ? '' : vt.deck().entry().desc || '',
-						keyup:function(e){
-							this.style.opacity = this.value ? '' : '.5';
-							if(e.keyCode == 13 && e.ctrlKey){
-								document.getElementById((addOrEdit != 'edit' ? 'add' : 'edit') + 'entry_sendbutton').triggerE('click');
-							}
-						},
-						input:function(){
-							resizeTextarea(this);
-						}
+						]
 					}, {
 						tag:'div',
 						class:['xButton', 'fullwidth'],
@@ -854,7 +957,7 @@ function setUpDeckPage(){
 		kids:[
 			{
 				tag:'header',
-				kids:'Deck: '+vt.deck().name,
+				kids:['Deck: ',{tag:'span', id:'container_for_deckname', kids:vt.deck().name}],
 				click:function(){
 					xAppOpenClose(this.parentNode, function /*open*/(){
 						resizeTextarea(document.getElementById('textarea_description_of_the_deck'));
@@ -866,7 +969,21 @@ function setUpDeckPage(){
 					{
 						tag:'div',
 						class:'separator',
-						kids:"Description of the deck:"
+						kids:"Title and description of the deck:"
+					},
+					{
+						tag:'input',
+						type:'text',
+						class:['fullwidth', 'textfield'],
+						placeholder:'Title of the deck',
+						value:vt.deck().name,
+						change:function(){
+							if(this.value.length){
+								vt.deck().name = this.value;
+								vt.deck().lastmodif = Date.now();
+								document.getElementById('container_for_deckname').delKids().appendX(this.value);
+							}
+						}
 					},
 					{
 						tag:'textarea',
@@ -886,21 +1003,179 @@ function setUpDeckPage(){
 					{
 						tag:'div',
 						class:'separator',
-						kids:"Deck-related tools:"
+						kids:"Deck-related options:"
 					},
 					{
 						tag:'div',
-						class:['xButton', 'small'],
-						kids:"Rename the deck",
-						click:function(){
-							var newname = prompt("New deck name:", vt.deck().name || '');
-							if(newname){
-								vt.deck().name = newname;
-								vt.deck().lastmodif = Date.now();
-								fsm.goTo(vt.deck().deckID);
+						class:['separator', 'small'],
+						kids:"The algorithm, in a nutshell:"
+					},
+					{
+						tag:'ul',
+						style:'padding-left: 21px;',
+						kids:[
+							{
+								tag:'li',
+								kids:[
+									"Each entry starts with an initial set of intervals corresponding to the four feedback buttons: ",
+									millisecondsToEnglish(initialIntervals[OUPS]), ', ',
+									millisecondsToEnglish(initialIntervals[MIDDLE]), ', ',
+									millisecondsToEnglish(initialIntervals[GOOD]), ' and ',
+									millisecondsToEnglish(initialIntervals[PERFECT]), '. '
+								]
+							},
+							{
+								tag:'li',
+								kids:[
+									"Pressing one of the feedback buttons will not only schedule the entry to be shown again after the corresponding interval, but it will also multiply the set of intervals by one of the following values: ",
+									Math.round(learnFactorAdjust[OUPS]*100), '%, ',
+									Math.round(learnFactorAdjust[MIDDLE]*100), '%, ',
+									Math.round(learnFactorAdjust[GOOD]*100), '% or ',
+									Math.round(learnFactorAdjust[PERFECT]*100), '%, ',
+									"depending on the feedback button."
+								]
+							},
+							{
+								tag:'li',
+								kids:[
+									"Thus, the better you remember an entry, the longer its intervals, and the less frequently you will get to review it."
+								]
 							}
-
+						]
+					},
+					{
+						tag:'input',
+						type:'checkbox',
+						id:'resetLearnFactorOnOblivion',
+						checked:'resetLearnFactorOnOblivion' in vt.deck() && vt.deck().resetLearnFactorOnOblivion ? true : false,
+						change:function(){
+							vt.deck().resetLearnFactorOnOblivion = this.checked;
+							vt.deck().lastmodif = Date.now();
+							document.getElementById('cardmain').delKids().appendX(new XCardMain());
 						}
+
+					},
+					{
+						tag:'label',
+						for:'resetLearnFactorOnOblivion',
+						kids:"Reset the intervals to their initial values in case of oblivion"
+					},
+					"\n",
+					{
+						tag:'input',
+						type:'checkbox',
+						id:'useFixedIntervalsForFavs',
+						checked:false == 'useFixedIntervalsForFavs' in vt.deck() || vt.deck().useFixedIntervalsForFavs ? true : false,
+						change:function(){
+							vt.deck().useFixedIntervalsForFavs = this.checked;
+							vt.deck().lastmodif = Date.now();
+							document.getElementById('cardmain').delKids().appendX(new XCardMain());
+						}
+
+					},
+					{
+						tag:'label',
+						for:'useFixedIntervalsForFavs',
+						kids:"Use fixed intervals for entries marked as favourites"
+					},
+					"\n",
+					{
+						tag:'input',
+						type:'checkbox',
+						id:'limitLearnFactorIncrease',
+						checked:false == 'limitLearnFactorIncrease' in vt.deck() || vt.deck().limitLearnFactorIncrease ? true : false,
+						change:function(){
+							vt.deck().limitLearnFactorIncrease = this.checked;
+							vt.deck().lastmodif = Date.now();
+							document.getElementById('cardmain').delKids().appendX(new XCardMain());
+						}
+
+					},
+					{
+						tag:'label',
+						for:'limitLearnFactorIncrease',
+						kids:"Limit the increase of the intervals to "+(maxintervalincrease*100)+"%"
+					},
+					{
+						tag:'div',
+						class:['separator', 'small'],
+						kids:"Interface options:"
+					},
+					{
+						tag:'input',
+						type:'checkbox',
+						id:'displayInfoForNerds',
+						checked:'displayInfoForNerds' in vt.deck() && vt.deck().displayInfoForNerds ? true : false,
+						change:function(){
+							vt.deck().displayInfoForNerds = this.checked;
+							vt.deck().lastmodif = Date.now();
+							document.getElementById('cardmain').delKids().appendX(new XCardMain());
+						}
+
+					},
+					{
+						tag:'label',
+						for:'displayInfoForNerds',
+						kids:"Display information for nerds"
+					},
+					'speechSynthesis' in window ? [
+						{
+							tag:'div',
+							class:['separator', 'small'],
+							kids:"Speech synthesis:"
+						},
+						{
+							tag:'div',
+							style:{display:'flex', height:'30px', lineHeight:'30px', padding:'0px 0px 0px 21px'},
+							kids:[
+								"Language for speech synthesis: ",
+								{
+									tag:'span',
+									style:{flexGrow:1, display:'inline-block', width:'40%'},
+									kids:'Loading...',
+									append:function(){
+										window.speechSynthesis.getVoices();
+										setTimeout(() => {
+											this.delKids().appendX({
+												tag:'select',
+												style:{width:'100%'},
+												kids:window.speechSynthesis.getVoices().map((el, ind) => {
+													return {
+														tag:'option',
+														value:ind,
+														kids:el.name + ' (' + el.lang + ')',
+														selected:'speechSynthesisVoiceID' in vt.deck() && vt.deck().speechSynthesisVoiceID == ind ? true : undefined
+													};
+												}),
+												change:function(){
+													vt.deck().speechSynthesisVoiceID = this.value;
+													vt.deck().lastmodif = Date.now();
+												}
+											});
+										}, 1000);
+									}
+								}
+							]
+						}, {
+							tag:'input',
+							type:'checkbox',
+							id:'speechSynthesisAutoSpeak',
+							checked:'speechSynthesisAutoSpeak' in vt.deck() && vt.deck().speechSynthesisAutoSpeak ? true : false,
+							change:function(){
+								vt.deck().speechSynthesisAutoSpeak = this.checked;
+								vt.deck().lastmodif = Date.now();
+							}
+						}, {
+							tag:'label',
+							'for':'speechSynthesisAutoSpeak',
+							kids:"Read the flashcards automatically as you flip them"
+						}
+
+					] : undefined,
+					{
+						tag:'div',
+						class:'separator',
+						kids:"Deck-related tools:"
 					},
 					{
 						tag:'div',
@@ -1026,54 +1301,7 @@ function setUpDeckPage(){
 								]
 							});
 						}
-					},
-					{
-						tag:'div',
-						class:'separator',
-						kids:"Deck-related options:"
-					},
-					'speechSynthesis' in window ? [
-						"Language for speech synthesis: ",
-						{
-							tag:'span',
-							kids:'Loading...',
-							append:function(){
-								window.speechSynthesis.getVoices();
-								setTimeout(() => {
-									this.delKids().appendX({
-										tag:'select',
-										style:'max-width:50%;',
-										kids:window.speechSynthesis.getVoices().map((el, ind) => {
-											return {
-												tag:'option',
-												value:ind,
-												kids:el.name + ' (' + el.lang + ')',
-												selected:'speechSynthesisVoiceID' in vt.deck() && vt.deck().speechSynthesisVoiceID == ind ? true : undefined
-											};
-										}),
-										change:function(){
-											vt.deck().speechSynthesisVoiceID = this.value;
-											vt.deck().lastmodif = Date.now();
-										}
-									});
-								}, 1000);
-							}
-						}, "\n", {
-							tag:'label',
-							'for':'speechSynthesisAutoSpeak',
-							kids:"Read the flashcards automatically as you flip them"
-						}, {
-							tag:'input',
-							type:'checkbox',
-							id:'speechSynthesisAutoSpeak',
-							checked:'speechSynthesisAutoSpeak' in vt.deck() && vt.deck().speechSynthesisAutoSpeak ? true : false,
-							change:function(){
-								vt.deck().speechSynthesisAutoSpeak = this.checked;
-								vt.deck().lastmodif = Date.now();
-							}
-						}
-
-					] : undefined
+					}
 				]
 			}
 		]
@@ -1093,7 +1321,7 @@ function setUpDeckPage(){
 		kids:[
 			{
 				tag:'header',
-				kids:"Review this deck's entries",
+				kids:["Review this deck's entries", {tag:'span', id:'entrycounter'}],
 				click:function(){
 					xAppOpenClose(this.parentNode);
 				}
@@ -1121,9 +1349,10 @@ function setUpDeckPage(){
 					xAppOpenClose(this.parentNode, function(){
 						var showHints       = document.getElementById('listOptionShowHint').checked;
 						var showOtherFields = document.getElementById('listOptionShowOtherFields').checked;
+						var showOnlyFavs    = document.getElementById('listOptionShowOnlyFavs').checked;
 						var querystr        = document.getElementById('listSearchbar').value;
-						document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, querystr));
-						document.getElementById('listSearchbar').focus();
+						document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, showOnlyFavs, querystr));
+						if(! is_touch_enabled()) document.getElementById('listSearchbar').focus();
 					});
 				}
 			}, {
@@ -1146,8 +1375,9 @@ function setUpDeckPage(){
 								input:function(){
 									var showHints       = document.getElementById('listOptionShowHint').checked;
 									var showOtherFields = document.getElementById('listOptionShowOtherFields').checked;
+									var showOnlyFavs    = document.getElementById('listOptionShowOnlyFavs').checked;
 									var querystr        = document.getElementById('listSearchbar').value;
-									document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, querystr));
+									document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, showOnlyFavs, querystr));
 								}
 							},
 							{
@@ -1158,8 +1388,9 @@ function setUpDeckPage(){
 								change:function(){
 									var showHints       = document.getElementById('listOptionShowHint').checked;
 									var showOtherFields = document.getElementById('listOptionShowOtherFields').checked;
+									var showOnlyFavs    = document.getElementById('listOptionShowOnlyFavs').checked;
 									var querystr        = document.getElementById('listSearchbar').value;
-									document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, querystr));
+									document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, showOnlyFavs, querystr));
 								}
 							}, {
 								tag:'label',
@@ -1173,13 +1404,30 @@ function setUpDeckPage(){
 								change:function(){
 									var showHints       = document.getElementById('listOptionShowHint').checked;
 									var showOtherFields = document.getElementById('listOptionShowOtherFields').checked;
+									var showOnlyFavs    = document.getElementById('listOptionShowOnlyFavs').checked;
 									var querystr        = document.getElementById('listSearchbar').value;
-									document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, querystr));
+									document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, showOnlyFavs, querystr));
 								}
 							}, {
 								tag:'label',
 								for:'listOptionShowOtherFields',
 								kids:"Show the additional fields"
+							}, "\n", {
+								tag:'input',
+								type:'checkbox',
+								id:'listOptionShowOnlyFavs',
+								name:'listOptionShowOnlyFavs',
+								change:function(){
+									var showHints       = document.getElementById('listOptionShowHint').checked;
+									var showOtherFields = document.getElementById('listOptionShowOtherFields').checked;
+									var showOnlyFavs    = document.getElementById('listOptionShowOnlyFavs').checked;
+									var querystr        = document.getElementById('listSearchbar').value;
+									document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, showOnlyFavs, querystr));
+								}
+							}, {
+								tag:'label',
+								for:'listOptionShowOnlyFavs',
+								kids:"Show only the entries marked as favs"
 							}
 						]
 					}, {
@@ -1194,17 +1442,20 @@ function setUpDeckPage(){
 	document.getElementById('cardmain').delKids().appendX(new XCardMain());
 }
 
-function XEntryList(showHints = false, showOtherFields = false, querystr = undefined){
+function XEntryList(showHints = false, showOtherFields = false, showOnlyFavs = false, querystr = undefined){
 	this.tag = 'div';
 	this.kids= [];
 	var indices;
 	if(querystr){
-		indices = vt.deck().searchByKeyword(querystr, showHints, showOtherFields);
+		indices = vt.deck().searchByKeyword(querystr, showHints, showOtherFields, showOnlyFavs);
 	}
 	else{
 		indices = vt.deck().sortedEntryList();
 	}
 	for(let i = 0; i < indices.length; i++){
+		if(showOnlyFavs && vt.deck().entry(indices[i]).isStarred !== true){
+			continue;
+		}
 		this.kids.push({
 			tag:'div',
 			style:'cursor:pointer;',
@@ -1218,7 +1469,6 @@ function XEntryList(showHints = false, showOtherFields = false, querystr = undef
 			entryid:indices[i],
 			click:function(){
 				var entryid = parseInt(this.getAttribute('entryid'));
-
 				vt.deck().entry(entryid).comeback = Math.min(Date.now()-1000, vt.deck().entry(entryid).comeback);
 				vt.deck().entry(entryid).isDisabled = undefined; // in case it was true, we unset this property
 				vt.deck().lastmodif = Date.now();
@@ -1315,7 +1565,7 @@ function XEntryList(showHints = false, showOtherFields = false, querystr = undef
 			if(d == vt.workingDeckID)
 				continue;
 
-			let amount = vt.deck(d).searchByKeyword(querystr, showHints, showOtherFields).length;
+			let amount = vt.deck(d).searchByKeyword(querystr, showHints, showOtherFields, showOnlyFavs).length;
 			if(amount){
 				otherDecks.push({deckid:d, amount:amount});
 			}
@@ -1414,7 +1664,7 @@ function processCardFace(face, autoplay){
 		}
 		else{
 			// IF IT IS MERELY SOME TEXT (GENERAL CASE):
-			var text = el.split(/(\;|\/|\+)/gi).map((e => e.trim())).map(e => {
+			var text = el.split(/\s?(\;|\/|\+)\s/gi).map((e => e.trim())).map(e => {
 				if(e == ';' || e == '/'){
 					 return {tag:'span', class:'semicolon', kids:' ' + e + ' '};
 				}
@@ -1422,7 +1672,21 @@ function processCardFace(face, autoplay){
 					 return {tag:'span', class:'plussign', kids:' ' + e + ' '};
 				}
 				else{
-					return e;
+					return e.split(/(\*[^\*]+\*)/gi).map(f => {
+						if(f.match(/(\*[^\*]+\*)/gi)){
+							return {tag:'span', class:'asteriscs', kids:f.substring(1, f.length-1)};
+						}
+						else{
+							return f.split(/(\{[^\{\}]+\})/gi).map(g => {
+								if(g.match(/(\{[^\{\}]+\})/gi)){
+									return {tag:'span', class:'bracesdef', kids:g.substring(1, g.length-1)};
+								}
+								else{
+									return g;
+								}
+							});
+						}
+					});
 				}
 			});
 			return {
@@ -1504,6 +1768,9 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 		document.getElementById('container_for_guesswithkeyboard').delKids();
 		// this element is filled with appendX later
 	}
+	if(!!document.getElementById('entrycounter')){
+		document.getElementById('entrycounter').delKids();
+	}
 
 	if(card === undefined){
 		// check whether there are entries in this deck that would come back whithin the next 24 hours
@@ -1558,13 +1825,48 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 					vt.deck().lastmodif = Date.now();
 					document.getElementById('cardmain').delKids().appendX(new XCardMain());
 				}
+			} : undefined,
+			'displayInfoForNerds' in vt.deck() && vt.deck().displayInfoForNerds ? {
+				tag:'div',
+				style:{
+					fontSize:'.67em',
+					color:'gray',
+					marginTop:'5px'
+				},
+				append:function(){
+					var s = 0, c = 0, t = 0;
+					for(let e of vt.deck().entries){
+						if(e.lastseen && e.interval && new Date(e.lastseen).toLocaleDateString() == new Date(Date.now()).toLocaleDateString()){
+							s += e.interval; c++;
+						}
+						if(! e.isDisabled){
+							t++;
+						}
+					}
+					this.appendX("You rescheduled "+c+" entr"+(c==1?'y':'ies')+" by " + millisecondsToEnglish(s/c) + " on average in this deck today.\nYield in this deck today: " + Math.round(s / t / (1000*3600*24) * 100) + "%.");
+				}
 			} : undefined
 		];
 	}
 	else{
-		var countA = typeof card.a == 'string' ? (card.a.countOccurrences(';')+card.a.countOccurrences('/')+1) : 0;
-		var countB = typeof card.b == 'string' ? (card.b.countOccurrences(';')+card.b.countOccurrences('/')+1) : 0;
+		var countA = typeof card.a == 'string' ? ((card.a.match(/\s?(\;|\/)\s/gi) || []).length+1) : 0;
+		var countB = typeof card.b == 'string' ? ((card.b.match(/\s?(\;|\/)\s/gi) || []).length+1) : 0;
 		this.kids = [
+			'displayInfoForNerds' in vt.deck() && vt.deck().displayInfoForNerds ? {
+				tag:'nav',
+				id:'cardnerdinfo',
+				style:{
+					fontSize:'.67em',
+					color:'gray',
+					marginBottom:'5px'
+				},
+				kids:[
+					"Last seen "    + (card.lastseen ? millisecondsToEnglish(Date.now() - card.lastseen) : '?') + ' ago, ',
+					"interval was " + (card.interval ? millisecondsToEnglish(card.interval) : (card.lastseen ? millisecondsToEnglish(card.comeback - card.lastseen) : '?')) + ', ',
+					"came back "    + (card.comeback ? millisecondsToEnglish(Date.now() - card.comeback) : '?') + ' ago. ',
+
+				]
+			} : '',
 			{
 				tag:'nav',
 				id:'cardhead',
@@ -1630,12 +1932,11 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 					} : undefined, {
 						tag:'div',
 						class:['xButton', 'small'],
-						kids:'Star',
+						kids:'⭐',
 						click:function(){
 							vt.deck().entry().isStarred = vt.deck().entry().isStarred == true ? undefined : true;
 							document.getElementById('cardmain').delKids().appendX(new XCardMain(vt.deck().workingEntry));
 							vt.deck().lastmodif = Date.now(); // this triggers the automated storage of the deck.
-							console.log("Implementation not yet finished: " + this.innerText + " (we furthermore want to implement a slightly different algorithm!)");
 						}
 					}
 				]
@@ -1680,6 +1981,7 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 			}, {
 				tag:'nav',
 				id:'cardfoot',
+				class:false == 'useFixedIntervalsForFavs' in vt.deck() || vt.deck().useFixedIntervalsForFavs ? 'fixedinterv' : '',
 				kids:[
 					{
 						tag:'div',
@@ -1704,6 +2006,7 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 					}, {
 						tag:'div',
 						class:['xButton', 'cardbutton', 'perfect'],
+						style:'flex-grow:2;',
 						kids:[
 							{
 								tag:'div',
@@ -1727,7 +2030,7 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 							{
 								tag:'div',
 								class:'label',
-								kids:'Good job'
+								kids:'Well done'
 							}, {
 								tag:'div',
 								class:'duration',
@@ -1765,11 +2068,11 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 							{
 								tag:'div',
 								class:'label',
-								kids:'I forgot'
+								kids:'Oblivion'
 							}, {
 								tag:'div',
 								class:'duration',
-								kids:millisecondsToEnglish(card.getIntervals(OUPS))
+								kids:'resetLearnFactorOnOblivion' in vt.deck() && vt.deck().resetLearnFactorOnOblivion ? 'Reset entry' : millisecondsToEnglish(card.getIntervals(OUPS))
 							}
 						],
 						click:function(){
@@ -1790,6 +2093,7 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 						kids:'Definition: '
 					}, {
 						tag:'div',
+						class:'cardextrascontent',
 						kids:card.defs
 					}, '\n'] : undefined,
 					!!card.xmpl ? [{
@@ -1797,6 +2101,7 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 						kids:'Examples: '
 					}, {
 						tag:'div',
+						class:'cardextrascontent',
 						kids:card.xmpl
 					}, '\n'] : undefined,
 					!!card.desc ? [{
@@ -1804,6 +2109,7 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 						kids:'Additional notes: '
 					}, {
 						tag:'div',
+						class:'cardextrascontent',
 						kids:card.desc
 					}, '\n'] : undefined
 				]
@@ -1813,13 +2119,18 @@ function XCardMain(entry_id){ // if entry_id is left undefined, the algorithm wo
 			// this element is already emptied earlier
 			document.getElementById('container_for_guesswithkeyboard').appendX(new XGuessWithKeyboard());
 		}
+		if(!!document.getElementById('entrycounter')){
+			var counts = vt.deck().entryListCounts();
+			document.getElementById('entrycounter').appendX(" "+counts.available+"/"+counts.total);
+		}
 	}
 
 	if(!!document.getElementById('article_listofentries') && document.getElementById('article_listofentries').classList.contains('show')){
 		var showHints       = document.getElementById('listOptionShowHint').checked;
 		var showOtherFields = document.getElementById('listOptionShowOtherFields').checked;
+		var showOnlyFavs    = document.getElementById('listOptionShowOnlyFavs').checked;
 		var querystr        = document.getElementById('listSearchbar').value;
-		document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, querystr));
+		document.getElementById('listbox').delKids().appendX(new XEntryList(showHints, showOtherFields, showOnlyFavs, querystr));
 	}
 
 }

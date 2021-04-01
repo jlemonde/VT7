@@ -135,12 +135,26 @@ footer#footer {
   margin-left: 0.25em;
 }
 
-.separator:not(:first-of-type) {
+.separator:not(:first-of-type):not(.small) {
   margin-top: 1.5em;
+}
+
+.separator.small:not(:first-of-type) {
+  margin-top: 0.5em;
 }
 
 .separator {
   margin-bottom: 0.5em;
+}
+
+.separator.small {
+  font-weight: normal;
+  font-size: 12px;
+}
+
+.separator.small::before,
+.separator.small::after {
+  border-bottom: 1px solid #8AA48C;
 }
 
 .xButton {
@@ -168,7 +182,7 @@ footer#footer {
   height: 12px;
   line-height: 12px;
   min-width: 12px;
-  padding: 5px;
+  padding: 5px 4px;
 }
 
 .xButton:hover {
@@ -243,6 +257,8 @@ input[type=checkbox] {
 .decklist_item {
   height: 27px;
   position: relative;
+  flex-grow: 1;
+  min-width: 20%;
 }
 
 .decklist_item_name {
@@ -253,6 +269,12 @@ input[type=checkbox] {
 .decklist_item_description {
   font-size: 7px;
   line-height: 12px;
+}
+
+.decklistflex {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 #cardmain {
@@ -289,6 +311,7 @@ input[type=checkbox] {
   flex-grow: 1;
   margin-left: 2px;
   margin-right: 2px;
+  width: 20px;
 }
 #cardmain #cardfoot .cardbutton .label {
   line-height: 15px;
@@ -313,6 +336,9 @@ input[type=checkbox] {
 }
 #cardmain #cardextras {
   background-color: #EEE;
+}
+#cardmain #cardextras .cardextrascontent {
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
 }
 #cardmain .cardmedium.image, #cardmain .cardmedium.video {
   display: inline-block;
@@ -356,6 +382,18 @@ input[type=checkbox] {
 #cardmain.starred {
   background-color: #FFE8E8;
 }
+#cardmain.starred #cardfoot.fixedinterv .perfect {
+  background-color: #f4c8c8;
+}
+#cardmain.starred #cardfoot.fixedinterv .good {
+  background-color: #edcece;
+}
+#cardmain.starred #cardfoot.fixedinterv .middle {
+  background-color: #e6d6d6;
+}
+#cardmain.starred #cardfoot.fixedinterv .oups {
+  background-color: #dedede;
+}
 
 #cardmain.starred.showB #cardbody {
   background-color: #F7D4D4;
@@ -394,6 +432,11 @@ input[type=checkbox] {
   font-weight: bold;
 }
 
+#entrycounter {
+  float: right;
+  font-size: 12px;
+}
+
 #listbox .entrylist_item span {
   display: inline-block;
   vertical-align: middle;
@@ -413,11 +456,11 @@ input[type=checkbox] {
 #listbox .entrylist_item.even {
   background-color: #E8E8E8;
 }
-#listbox .entrylist_item.disabled {
-  color: #CC6600;
-}
 #listbox .entrylist_item.delayed {
   color: #9966CC;
+}
+#listbox .entrylist_item.disabled {
+  color: #CC6600;
 }
 #listbox .entrylist_item.starred.odd {
   background-color: #FFE8E8;
@@ -456,6 +499,20 @@ input[type=checkbox] {
 .semicolon, .plussign {
   padding: 0px 5px;
   opacity: 0.5;
+}
+
+.asteriscs {
+  font-variant: small-caps;
+  opacity: 0.5;
+  color: #4466BB;
+  font-style: normal;
+}
+
+.bracesdef {
+  font-size: 0.6em;
+  color: #2c43c7;
+  font-style: italic;
+  font-family: "Trebuchet MS";
 }
 
 /*# sourceMappingURL=ui.css.map */

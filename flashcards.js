@@ -53,17 +53,40 @@ function VocabTrainer(){
 					if(!!document.getElementById('container_for_serverhosted_decklist')){
 						document.getElementById('container_for_serverhosted_decklist').delKids();
 						if(l.length){
-							document.getElementById('container_for_serverhosted_decklist').appendX({
-								tag:'div',
-								kids:'\nYour decks that are not on this device:'
-							});
+							document.getElementById('container_for_serverhosted_decklist').appendX([
+								{
+									tag:'div',
+									class:'separator',
+									style:{
+										marginTop:'1em'
+									},
+									kids:[
+										{
+											tag:'div',
+											class:['xButton', 'small'],
+											kids:'Show ' + l.length + ' deck' + (l.length == 1 ? '' : 's') + ' of yours that ' + (l.length == 1 ? 'is' : 'are') + ' not on this device',
+											click:function(){
+												this.parentNode.appendX("Your decks that are not on this device:");
+												this.delElement();
+												document.getElementById('container_for_decks_not_on_device').style.display = 'block';
+											}
+										}
+									]
+								}, {
+									tag:'span',
+									id:'container_for_decks_not_on_device',
+									style:{
+										display:'none'
+									}
+								}
+							]);
 
 							var collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
 							var filelist = l.sort((a, b) => {
 								return collator.compare(a.decktitle, b.decktitle);
 							});
 							l = filelist;
-							document.getElementById('container_for_serverhosted_decklist').appendX(
+							document.getElementById('container_for_decks_not_on_device').appendX(
 								l.map((elem) => {
 									return {
 										tag:'div',
@@ -179,7 +202,7 @@ VocabTrainer.prototype.downloadDeckList = function(){
 		var params = {
 			clienttimestamp:Math.round(Date.now()/1000)
 		};
-		ajax('comm.php?action=decklist', params, "Downloading the deck list...").then(function(resp){
+		ajax('comm.php?action=decklist', params, "Downloading the deck list").then(function(resp){
 			if(resp.indexOf('true, ') == 0){
 				resp = resp.substr('true, '.length);
 				resp = JSON.parse(resp);
@@ -253,6 +276,11 @@ VocabTrainer.prototype.downloadDeck = function(deckID){
 			vt.removeDeck(resp.deckID);//we need that because we can't push on an existing deckID
 			vt.pushDeck(resp);
 			vt.storeDeck(resp.deckID);
+
+			if(document.getElementById('container_for_local_decklist')){
+				// |@# Not optimal complexity, but who cares.
+				document.getElementById('container_for_local_decklist').delKids().appendX(new XDeckListButtons());
+			}
 		}
 		else{
 			console.log(resp);
@@ -329,9 +357,33 @@ Deck.prototype.removeEntry = function(entry_id){
 Deck.prototype.reviseEntry = function(goodness){
 	entry_id = this.workingEntry;
 
+	// console.info(
+	// 	"Implémentation de I+Y !!! ",
+	// 	"Revenu depuis ", millisecondsToEnglish( Date.now()-this.entries[entry_id].comeback ),
+	// 	"Vue la dernière fois il y a ", millisecondsToEnglish( Date.now()-this.entries[entry_id].lastseen ),
+	// 	"Intervalle initial était ", millisecondsToEnglish( this.entries[entry_id].comeback-this.entries[entry_id].lastseen ),
+	// 	!! this.entries[entry_id].lastseen,
+	// 	(Date.now()-this.entries[entry_id].lastseen) / (this.entries[entry_id].comeback-this.entries[entry_id].lastseen)
+	// );
+	// je pense que ça peut-être suffisant de faire une simple règle de trois entre lastseen, comeback et DateNow.
+	// let multiplicateur = (Date.now()-lastseen) / (comeback-lastseen);
+	// this.entries[entry_id].learnFactor  *= multiplicateur;
+	// attention!! lastseen doit exister!!!! Je pourrais vérifier que le multiplicateur est compris entre 1 et 5 afin de ne pas avoir de valeurs aberrantes en cas de gros coup dur.
+	// ATTENTION! SI ON MET ÇA LÀ, LES LABELS DES BOUTONS VIOLETS NE SERONT PAS MIS À JOUR À TEMPS... UNE MEILLEURE IDÉE SERAIT DE LANCER L'UPDATE AU MOYEN D'UNE FONCTION SPÉCIALEMENT CONÇUE APPELÉE DEPUIS XCARDMAIN.
+	// ATTENTION! IL FAUT VEILLER À CE QUE LA PARTIE 'Y' NE SOIT PRISE EN COMPTE QUE SI ON SE SOUVIENT BIEN VOIRE PARFAITEMENT!
+
 	// core of the algorithm
-	this.entries[entry_id].comeback      = Date.now() + Math.round(this.entries[entry_id].getIntervals(goodness) * (0.9+0.2*Math.random()));
+	this.entries[entry_id].interval      = Math.round(this.entries[entry_id].getIntervals(goodness, true) * (0.9+0.2*Math.random()));
+	this.entries[entry_id].comeback      = Date.now() + this.entries[entry_id].interval;
 	this.entries[entry_id].learnFactor  *= this.entries[entry_id].getLearnFactorAdjust(goodness);
+
+
+	// tuning of the algorithm (settings)
+	if(goodness == OUPS && 'resetLearnFactorOnOblivion' in this && this.resetLearnFactorOnOblivion){
+		this.entries[entry_id].learnFactor= 1;
+		// and we overwrite the comeback to 5 minutes
+		this.entries[entry_id].comeback   = Date.now() + 5*60*1000;
+	}
 
 	// rounding so that the json files take up less space
 	this.entries[entry_id].learnFactor   = Math.round(this.entries[entry_id].learnFactor *100)/100;
@@ -341,6 +393,19 @@ Deck.prototype.reviseEntry = function(goodness){
 		this.entries[entry_id].learnFactor= 0.02;
 	}
 
+	// // store the stats part.
+	// if(! Array.isArray(this.entries[entry_id].history)){
+	// 	this.entries[entry_id].history = new Array();
+	// }
+	// if(this.entries[entry_id].lastseen || this.entries[entry_id].since){
+	// 	this.entries[entry_id].history.push([
+	// 		/*Duration:*/Date.now() - (this.entries[entry_id].lastseen || this.entries[entry_id].since),
+	// 		/*Outcome:*/ goodness
+	// 	]);
+	// }
+
+	this.entries[entry_id].lastseen = Date.now();
+
 	// this triggers the automated storage of the deck.
 	this.lastmodif = Date.now();
 };
@@ -349,6 +414,8 @@ Deck.prototype.entryListCounts = function(){
 	var delayed   = 0;
 	var disabled  = 0;
 	var total     = 0;
+	var brandnew  = 0;
+	var today     = 0;
 	// CAUTION: THIS LOOP SHALL LOOK THE SAME AS THE ONE IN .sortedEntryList !!
 	for(let i = 0; i < this.entries.length; i++){
 		total++;
@@ -363,12 +430,20 @@ Deck.prototype.entryListCounts = function(){
 				available++;
 			}
 		}
+		if(!this.entries[i].lastseen){
+			brandnew++;
+		}
+		else if(new Date(this.entries[i].lastseen).toLocaleDateString() == new Date(Date.now()).toLocaleDateString()){
+			today++;
+		}
 	}
 	return {
 		available:available,
 		delayed:delayed,
 		disabled:disabled,
-		total:total
+		total:total,
+		brandnew:brandnew,
+		today:today
 	};
 };
 Deck.prototype.sortedEntryList = function(){
@@ -421,9 +496,13 @@ Deck.prototype.nextEntry = function(){
 			}
 		}
 	}
-	if(typeof this.entries[which] == 'object'){
-		this.entries[which].lastseen = Date.now();
+
+	// this is merely a patch for a bug related to some (rare) entries imported from VT5
+	if(!!which && this.entries[which].learnFactor == 0){
+		console.log("Bug corrected!", this.entries[which]);
+		this.entries[which].learnFactor = 1;
 	}
+
 	this.workingEntry = which;
 };
 Deck.prototype.entry = function(i){
@@ -443,20 +522,22 @@ Deck.prototype.entriesDueWithin24h = function(){
 			//  (and would reappear within 24h because we did not remember them well enough
 			//  for them to reach a greater interval)
 			continue;
-		if(this.entry(e).comeback < Date.now() + 24*3600*1000){
+		if(this.entry(e).interval < 24*3600*1000){
 			comeback24h.push(e);
 		}
 	}
 	return comeback24h;
 };
-Deck.prototype.searchByKeyword = function(str, searchInHint, searchInAdditional){
+Deck.prototype.searchByKeyword = function(str, searchInHint, searchInAdditional, searchOnlyInFavs){
 	var querystr  = str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 	//var queryarr  = querystr.split(' ').map(e => e.trim());
 	var results = [];
 	for(let e = 0; e < this.entries.length; e++){
 		var relev = 0;
 		if(typeof this.entries[e] == 'object'){
-
+			if(searchOnlyInFavs && this.entries[e].isStarred !== true){
+				continue;
+			}
 			//console.log(2, this.entries[e]);
 			var a = this.entries[e].a;
 			if(typeof a == 'string'){
@@ -534,9 +615,9 @@ function Card(faceA, faceB, hint, defs, xmpl, desc){
 
 	this.isDisabled  = undefined;//actually: false, but we only look for explicit trues.
 	this.isStarred   = undefined;//actually: false, but we only look for explicit trues.
-	//this.since       = Date.now();//we don't actually want to store that!
+	this.since       = Date.now();// CAUTION! Some cards don't have that!!
 
-	this.hasMedia    = undefined; // either undefined or true; tells whether to use with Internet
+	this.hasMedia    = undefined; // either undefined or true; tells whether to use with Internet; |@# currently not in use.
 
 	// This factor (noted "L" in the math part) determines how well you know the card. It is this
 	// factor that multiplies the initial learning intervals in order to determine the intervals that
@@ -547,22 +628,54 @@ function Card(faceA, faceB, hint, defs, xmpl, desc){
 	this.comeback = Date.now()-1000;
 
 	this.lastseen = undefined; // If undefined, it means the card is NEW!! otherwise contains a timestamp
+	this.interval = undefined;
 
-	//this.history = [];   // This is not used for now, but will (someday)
+	//this.history = undefined;
 }
 
 const PERFECT = 3;
 const GOOD    = 2;
 const MIDDLE  = 1;
 const OUPS    = 0;
-Card.prototype.getIntervals = function(goodness){
-	var initialIntervals  = [5*60*1000, 4*3600*1000, 2*24*3600*1000, 8*24*3600*1000];
-	return initialIntervals[goodness] * this.learnFactor;
+
+const initialIntervals    = [5*60*1000, 4*3600*1000, 2*24*3600*1000, 8*24*3600*1000];
+const learnFactorAdjust   = [1/2, 1/Math.pow(2, 1/4), Math.pow(2, 1/4), 2];
+const maxintervalincrease = 4;
+
+Card.prototype.getIntervals = function(goodness, /*bool*/applyMaxIntervalIncrease = false){
+	var lf = this.learnFactor;
+
+	// we want to use fixed intervals for favs
+	if(this.isStarred && (false == 'useFixedIntervalsForFavs' in vt.deck() || vt.deck().useFixedIntervalsForFavs)){
+		lf = 2;
+	}
+
+	var newinterval = initialIntervals[goodness] * lf;
+
+	// we may limit the increase of the learnFactorAdjust
+	if(false == 'limitLearnFactorIncrease' in vt.deck() || vt.deck().limitLearnFactorIncrease){
+		if(this.interval && newinterval > this.interval*maxintervalincrease){
+			var newinterval2 = this.interval*maxintervalincrease;
+			if(applyMaxIntervalIncrease){
+				this.learnFactor *= newinterval2 / newinterval;
+				console.log("applyMaxIntervalIncrease ", 'applied factor ', newinterval2 / newinterval, ' to entryid ', vt.deck().workingEntry);
+			}
+			newinterval = newinterval2;
+		}
+	}
+
+	return newinterval;
 };
 Card.prototype.getLearnFactorAdjust = function(goodness){
-	// ACTUALLY THIS FUNCTION HAS NOTHING TO DO WITH THE CARDS, THE OUTPUT IS ALWAYS THE SAME.
-	var learnFactorAdjust = [1/2, 1/Math.pow(2, 1/2), Math.pow(2, 1/4), 2];
-	return learnFactorAdjust[goodness];
+	// THIS IS ODDLY A PROPERTY OF THE CARD, BUT IN FACT, IT IS USUALLY CHOSEN AT DECK-LEVEL.
+	//    THE REASON IS THAT A CARD-LEVEL SETTING TO MARK A CARD NASTY OR STRAIGHTFORWARD MIGHT GET IMPLEMENTED SOMEDAY.
+
+	// we want not to change the learnFactor in case of fixed intervals for favs
+	var lfa = true;
+	if(this.isStarred && (false == 'useFixedIntervalsForFavs' in vt.deck() || vt.deck().useFixedIntervalsForFavs)){
+		lfa = false;
+	}
+	return lfa ? learnFactorAdjust[goodness] : 1;
 };
 
 
